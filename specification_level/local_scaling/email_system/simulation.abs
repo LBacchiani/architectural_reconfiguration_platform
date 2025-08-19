@@ -1,0 +1,86 @@
+module Simulation;
+
+export *;
+import * from Monitor;
+import * from ABS.DC;
+import * from Architecture;
+import * from InvariantsDeployer;
+import * from BaseScale;
+import * from WorkloadGenerator;
+import * from Prometheus;
+import * from Param;
+import * from DB;
+import * from MessageParserPlan;
+import * from VirusScannerPlan;
+import * from AttachmentsManagerPlan;
+import * from ImageAnalyserPlan;
+import * from MessageAnalyserPlan;
+import * from LocalScaler;
+import * from Adaptation;
+
+interface ISimulation {
+     Unit start();
+}
+
+class Simulation() implements ISimulation {
+
+     Unit start() {
+
+          CloudProvider cp = new CloudProvider("CloudProvider");
+          DBInterface db = new DB();
+          PrometheusInterface prometheus = new Prometheus();
+          InvariantsDeployer c1 = new InvariantsDeployer(cp,prometheus,db);
+          await c1!deploy();
+
+          List<MessageParser_LoadBalancerInterface> messageParser_LoadBalancerList = await c1!getMessageParser_LoadBalancerInterface();
+          MessageParser_LoadBalancerInterface parserLB = head(messageParser_LoadBalancerList);
+	     List<HeaderAnalyser_LoadBalancerInterface> headerAnalyser_LoadBalancerList = await c1!getHeaderAnalyser_LoadBalancerInterface();
+          HeaderAnalyser_LoadBalancerInterface headerLB = head(headerAnalyser_LoadBalancerList);
+	     List<LinkAnalyser_LoadBalancerInterface> linkAnalyser_LoadBalancerList = await c1!getLinkAnalyser_LoadBalancerInterface();
+          LinkAnalyser_LoadBalancerInterface linkLB = head(linkAnalyser_LoadBalancerList);
+	     List<TextAnalyser_LoadBalancerInterface> textAnalyser_LoadBalancerList = await c1!getTextAnalyser_LoadBalancerInterface();
+          TextAnalyser_LoadBalancerInterface textLB = head(textAnalyser_LoadBalancerList);
+	     List<VirusScanner_LoadBalancerInterface> virusScanner_LoadBalancerList = await c1!getVirusScanner_LoadBalancerInterface();
+          VirusScanner_LoadBalancerInterface virusScannerLB = head(virusScanner_LoadBalancerList);
+	     List<AttachmentsManager_LoadBalancerInterface> attachmentsManager_LoadBalancerList = await c1!getAttachmentsManager_LoadBalancerInterface();
+          AttachmentsManager_LoadBalancerInterface attManagerLB = head(attachmentsManager_LoadBalancerList);
+	     List<ImageAnalyser_LoadBalancerInterface> imageAnalyser_LoadBalancerList = await c1!getImageAnalyser_LoadBalancerInterface();
+          ImageAnalyser_LoadBalancerInterface imageAnalyzerLB = head(imageAnalyser_LoadBalancerList);
+	     List<MessageAnalyser_LoadBalancerInterface> messageAnalyser_LoadBalancerList = await c1!getMessageAnalyser_LoadBalancerInterface();
+          MessageAnalyser_LoadBalancerInterface messageAnalyzerLB = head(messageAnalyser_LoadBalancerList);
+
+          MessageParserPlan mpp = new MessageParserPlan(cp, prometheus, parserLB, headerLB, linkLB, textLB, virusScannerLB, db, messageAnalyzerLB);
+          LocalScaler parserLS = new ParserScaler(prometheus, mpp);
+
+          LocalScaler hls = new HeaderScaler(prometheus);
+          
+          LocalScaler lls = new LinkScaler(prometheus);
+
+          LocalScaler tls = new TextScaler(prometheus);
+
+
+          VirusScannerPlan vsp = new VirusScannerPlan(cp, prometheus, virusScannerLB, messageAnalyzerLB, attManagerLB);
+          LocalScaler vsLS = new VirusScannerScaler(prometheus, vsp);
+
+          AttachmentsManagerPlan atp = new AttachmentsManagerPlan(cp, prometheus, attManagerLB, imageAnalyzerLB); 
+          LocalScaler amLS = new AttachmentsManagerScaler(prometheus, atp);
+
+          ImageAnalyserPlan iap = new ImageAnalyserPlan(cp, prometheus, imageAnalyzerLB, messageAnalyzerLB);
+          LocalScaler iaLS = new ImageAnalyserScaler(prometheus, iap);
+
+          MessageAnalyserPlan map = new MessageAnalyserPlan(cp, prometheus, messageAnalyzerLB, db);
+          LocalScaler mapLS = new MessageAnalyserScaler(prometheus, map);
+
+          List<LocalScaler> scalers = list[parserLS,hls, lls, tls, vsLS,amLS,iaLS,mapLS];
+
+          ////SETUP///
+          BaseScale c2 = new BaseScale(cp, prometheus, parserLB, headerLB, linkLB, textLB,  virusScannerLB, attManagerLB, imageAnalyzerLB, messageAnalyzerLB, db);
+          await c2!deploy();
+
+          AdaptationAlgorithm alg = new Algorithm(scalers);
+
+          
+          new Monitor(prometheus, alg);
+          new WorkloadGenerator(parserLB);
+     }
+}

@@ -1,0 +1,74 @@
+module Prometheus;
+
+export *;
+
+import * from Reconfig_Param;
+import * from Architecture;
+import * from Param;
+
+
+interface Metric {
+    [Atomic] Pair<String,String> id();
+    Rat value(); 
+   [Atomic] Unit push(Rat val);
+   Unit flush();
+}
+
+class DiscreteMetric(Pair<String,String> id) implements Metric {
+    Rat value = 0;
+    [Atomic] Pair<String,String> id() {return id;}
+    Rat value() { return value; }
+    [Atomic] Unit push(Rat val)  { value = value + val; }
+    Unit flush() {value = 0;}
+}
+
+class InstantMetric(Pair<String,String> id) implements Metric {
+    Rat value = 0;
+    [Atomic] Pair<String,String> id() {return id;}
+    Rat value() { return value; }
+    [Atomic] Unit push(Rat val)  { value = val; }
+    Unit flush() {}
+}
+
+
+
+
+interface PrometheusInterface {
+    [Atomic] Unit register(List<Metric> ms);
+    Rat getV(String metric, String key);
+    Unit flush();
+}
+
+
+class Prometheus() implements PrometheusInterface {
+
+    Map<Pair<String,String>,List<Metric>> metrics = map[];
+
+    [Atomic] Unit register(List<Metric> ms) {
+        foreach (m in ms) {
+            Pair<String,String> id = m.id();
+            if (contains(keys(metrics),id)) {
+                List<Metric> tmp = lookupUnsafe(metrics,id);
+                tmp = appendright(tmp,m);
+                metrics = put(metrics,id,tmp);
+            }
+            else metrics = put(metrics,id,list[m]);
+        }
+    }
+
+    Rat getV(String metric, String key) {
+        List<Metric> ms = lookupDefault(metrics,Pair(metric,key),list[]);
+        Rat toRet = 0;//m.value();
+        foreach (m in ms) {
+            Rat val = m.value();
+            toRet = toRet + val;
+        }
+        return toRet;
+    }
+
+    Unit flush() {
+        foreach (ms in values(metrics)) {
+            foreach(m in ms) m.flush();
+        }
+    }
+}

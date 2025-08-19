@@ -1,0 +1,74 @@
+module Simulation;
+
+export *;
+import * from Monitor;
+import * from Architecture;
+import * from ABS.DC;
+import * from Setup;
+import * from WorkloadGenerator;
+import * from Adaptation;
+import * from Prometheus;
+import * from Param;
+import * from AuthDeployment;
+import * from ImageDeployment;
+import * from PersistenceDeployment;
+import * from RecommenderDeployment;
+import * from WebUIDeployment;
+import * from LocalScaler;
+
+
+interface ISimulation {
+     Unit start();
+}
+
+class Simulation() implements ISimulation {
+
+     Unit start() {
+
+          CloudProvider cp = new CloudProvider("CloudProvider");
+
+          PrometheusInterface prometheus = new Prometheus();
+
+
+          ////SETUP///
+          Setup setup = new Setup(cp, prometheus);
+          await setup!deploy();
+
+          List<ImageLoadBalancerInterface> imageLBList = await setup!getImageLoadBalancerInterface();
+          ImageLoadBalancerInterface imageLB = head(imageLBList);
+
+          List<AuthLoadBalancerInterface> authLBList = await setup!getAuthLoadBalancerInterface();
+          AuthLoadBalancerInterface authLB = head(authLBList);
+
+          List<RecommenderLoadBalancerInterface> recommenderLBList = await setup!getRecommenderLoadBalancerInterface();
+          RecommenderLoadBalancerInterface recommenderLB = head(recommenderLBList);
+
+          List<PersistenceLoadBalancerInterface> persistenceLBList = await setup!getPersistenceLoadBalancerInterface();
+          PersistenceLoadBalancerInterface persistenceLB = head(persistenceLBList);
+
+          List<WebUILoadBalancerInterface> webUILBList = await setup!getWebUILoadBalancerInterface();
+          WebUILoadBalancerInterface webUILB = head(webUILBList);
+
+          WebUIDeployment webUID = new WebUIDeployment(cp, prometheus, webUILB, persistenceLB, authLB, imageLB, recommenderLB);
+          LocalScaler webUILS = new WebUIScaler(prometheus, webUID);
+
+          AuthDeployment authD = new AuthDeployment(cp, prometheus, authLB, persistenceLB);
+          LocalScaler authLS = new AuthScaler(prometheus, authD);
+
+          PersistenceDeployment persD = new PersistenceDeployment(cp, prometheus, persistenceLB);
+          LocalScaler persLS = new PersistenceScaler(prometheus, persD);
+
+          RecommenderDeployment recommD = new RecommenderDeployment(cp, prometheus, recommenderLB);
+          LocalScaler recommLS = new RecommenderScaler(prometheus, recommD);
+
+          ImageDeployment imageD = new ImageDeployment(cp, prometheus, imageLB);
+          LocalScaler imageLS = new ImageScaler(prometheus, imageD);
+
+          List<LocalScaler> scalers = list[webUILS, authLS, persLS, recommLS, imageLS];
+          
+          AdaptationAlgorithm alg = new Algorithm(scalers);
+
+          new Monitor(prometheus, alg);
+          new WorkloadGenerator(webUILB);
+     }
+}
