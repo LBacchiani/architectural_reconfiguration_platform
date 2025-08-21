@@ -19,4 +19,3 @@
 180 5.555536236373201 next: 157.7 measured: 71.4 tot: 714.0 comp: 714.0 rej: 0.0 supp: 120.0 inst: 11.0
 190 9.976619906479627 next: 440.4 measured: 181.1 tot: 1811.0 comp: 1497.0 rej: 156.0 supp: 220.0 inst: 17.0
 200 39.2 next: 12.8 measured: 411.1 tot: 4111.0 comp: 4120.0 rej: 158.0 supp: 462.0 inst: 30.0
-

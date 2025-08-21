@@ -2,7 +2,7 @@
 10 0.29904306220095694 measured: 15.2 TOT: 153 comp: 152 rej: 0 supp: 60 INST: 8
 20 96.28507560815254 measured: 41.6 TOT: 417 comp: 326 rej: 32 supp: 60 INST: 8
 30 249.8594520005411 measured: 198.5 TOT: 1986 comp: 606 rej: 1339 supp: 60 INST: 8
-40 899.8906638645059 measured: 591.2 TOT: 5913 comp: 1405 rej: 4405 supp: 220 INST: 17 Scale2-upx1
+40 499.8906638645059 measured: 591.2 TOT: 5913 comp: 1405 rej: 4405 supp: 220 INST: 17 Scale2-upx1
 50 213.03067740392086 measured: 590.7 TOT: 5908 comp: 5443 rej: 664 supp: 616 INST: 39 Scale2-downx1 Scale3-upx1 Scale4-upx1
 60 13.554509742266534 measured: 592.9 TOT: 5930 comp: 5638 rej: 132 supp: 616 INST: 39
 70 354.76342066625745 measured: 741.6 TOT: 7416 comp: 3186 rej: 4227 supp: 616 INST: 39
