@@ -59,11 +59,15 @@ Once the compilation phase successfully end, you should see a `gen` folder conta
 
 `gen/erl/run`
 
+###  Industrial low latency anomaly detection architecture
 
+To execute the Industrial low latency anomaly detection architecture simulation adapted with the reactive global scaling approach run: 
+
+`./compile migration birex erlang`
 
 ## Data Analysis 
 
-We carried out our analysis using a Jupyter notebook. To run it, you must first ensure that `Python 3.xx` is installed. Then, to install requierd dependencies run: 
+We implemented our data analysis using a Jupyter notebook. To run it, you must first ensure that `Python 3.xx` is installed. Then, to install requierd dependencies run: 
 
 `pip install -r requirements.txt` 
 
