@@ -1,0 +1,88 @@
+name: my-k8s-app
+runtime: yaml
+resources:
+  proxy-308f6eb8-a094-42f3-b5a0-509b5d2224b3:
+    name: proxy-308f6eb8-a094-42f3-b5a0-509b5d2224b3
+    type: kubernetes:core/v1:Pod
+    properties:
+      apiVersion: v1
+      kind: Pod
+      metadata:
+        name: proxy-308f6eb8-a094-42f3-b5a0-509b5d2224b3
+        labels:
+          type: proxy-type
+      spec:
+        nodeName: k3d-k3s-default-agent-1
+        containers:
+        - name: proxy-container
+          image: k8s.gcr.io/pause:2.0
+          resources:
+            requests:
+              cpu: 450m
+              memory: 600M
+    options: {}
+  support-a980bdb2-7f66-41db-9338-6839376d5db0:
+    name: support-a980bdb2-7f66-41db-9338-6839376d5db0
+    type: kubernetes:core/v1:Pod
+    properties:
+      apiVersion: v1
+      kind: Pod
+      metadata:
+        name: support-a980bdb2-7f66-41db-9338-6839376d5db0
+        labels:
+          type: support-type
+      spec:
+        nodeName: k3d-k3s-default-agent-0
+        containers:
+        - name: support-container
+          image: k8s.gcr.io/pause:2.0
+          env:
+          - name: MY_VAR
+            value: support-service-81e5aa4f-3991-4a4d-8bcf-966273890fd9
+          - name: OTHER_VAR
+            value: bar
+          resources:
+            requests:
+              cpu: 450m
+              memory: 600M
+    options: {}
+  backend-2dc2c0b8-81ab-4f23-af65-6b190fc3560f:
+    name: backend-2dc2c0b8-81ab-4f23-af65-6b190fc3560f
+    type: kubernetes:core/v1:Pod
+    properties:
+      apiVersion: v1
+      kind: Pod
+      metadata:
+        name: backend-2dc2c0b8-81ab-4f23-af65-6b190fc3560f
+        labels:
+          type: backend-type
+      spec:
+        nodeName: k3d-k3s-default-agent-0
+        containers:
+        - name: backend-container
+          image: k8s.gcr.io/pause:2.0
+          resources:
+            requests:
+              cpu: 300m
+              memory: 500M
+    options:
+      dependsOn:
+      - ${proxy-308f6eb8-a094-42f3-b5a0-509b5d2224b3}
+  support-service-81e5aa4f-3991-4a4d-8bcf-966273890fd9:
+    name: support-service-81e5aa4f-3991-4a4d-8bcf-966273890fd9
+    type: kubernetes:core/v1:Service
+    properties:
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: support-service-81e5aa4f-3991-4a4d-8bcf-966273890fd9
+        labels:
+          type: support-service-type
+      spec:
+        selector:
+          type: support-type
+        ports:
+        - protocol: TCP
+          port: 80
+          targetPort: 80
+    options: {}
