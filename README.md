@@ -67,6 +67,24 @@ To execute the Industrial low latency anomaly detection architecture simulation 
 
 
 ## Implementation Level
+Implementation level simulations are designed to be executed inside a Kubernetes cluster. We provide the necessary Kubernetes manifests in order to facilitate the deployment of the various systems.
+
+### Teastore and Email pipeline systems.
+
+The Kubernetes manifests for the Teastore and Email Pipeline systems are located in the `implementation_level/k8s` directory along with a deployment script, `deploy.sh`. Please refer to the instruction provided inside the [directory](implementation_level/k8s/README.md) for deployment details.
+
+### Industrial low latency anomaly detection architecture
+The folder `implementation_level/birex_orchestrator` contains both the implementation and the Kubernetes manifests for the Industrial low latency anomaly detection architecture. In order to deploy the system navigate to `implementation_level/birex_orchestrator/multiple_orchestration`.
+
+You'll find a file called `run_launcher.sh` that will launch the necessary Kubernetes resources and also starts the simulation, also producing a log file with the results.
+
+Please, give the `run_launcher.sh` file execution permissions by running on a terminal:
+
+```bash
+chmod +x run_launcher.sh
+```
+
+Also ensure that the configuration for the Kubernetes cluster is properly set up and that you have the necessary permissions to deploy resources.
 
 ## Data Analysis 
 
