@@ -1,0 +1,1 @@
+export const logger = (zone, stats) => console.log(stats.map((s, i) => `Pipeline${i + 1}[zone:${zone[i]}]:(${s.avgLatency},${s.avgDataSize})`).join(' '));
