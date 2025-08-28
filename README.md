@@ -65,6 +65,9 @@ To execute the Industrial low latency anomaly detection architecture simulation 
 
 `./compile migration birex erlang`
 
+
+## Implementation Level
+
 ## Data Analysis 
 
 We implemented our data analysis using a Jupyter notebook. To run it, you must first ensure that `Python 3.xx` is installed. Then, to install requierd dependencies run: 
@@ -76,4 +79,5 @@ Then, to start a Jupyter notebook local server, run:
 `jupyter notebook` 
 
 and open `main.ipynb`
+
 
