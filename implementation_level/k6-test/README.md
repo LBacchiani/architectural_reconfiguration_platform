@@ -9,3 +9,5 @@ To run the load tests, you need to have [k6](https://k6.io/docs/getting-started/
 k6 run main.js
 ``` 
 
+You can find tests for the mail pipeline in the `mail` directory and tests for the tea store use case in the `tea-store` directory.
+
