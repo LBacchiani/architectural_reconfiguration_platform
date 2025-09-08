@@ -15,9 +15,9 @@ class Guard:
             scaler: SysScaler,
             mixer: Mixer,
             predictions,
-            k_big = 20,
-            k = 10,
-            sleep = 10,
+            k_big=20,
+            k=10,
+            sleep=10,
     ):
         self.guard_thread = None
         self.log_thread = None
@@ -41,41 +41,30 @@ class Guard:
         self.proactive_reactive = self.proactiveness and os.environ.get("PROACTIVE_REACTIVE", "false").lower() == 'true' 
         self.predictions = predictions
         
+        # Metrics names from environment variables
+        self.http_requests_metric = os.environ.get("HTTP_REQUESTS_METRIC", "http_requests_total_webUI_counter")
+        self.behaviour_execution_metric = os.environ.get("BEHAVIOUR_EXECUTION_METRIC", "behaviour_execution")
+        self.behaviour_time_metric = os.environ.get("BEHAVIOUR_TIME_METRIC", "behaviour_time_execution")
+        self.message_lost_metric = os.environ.get("MESSAGE_LOST_METRIC", "message_lost_webUI")
+
         self.logger = GuardLogger.from_env()
 
     def start(self) -> None:
-        """
-        Start the guard process.
-        This method will start a new thread that will query the monitor service in order
-        to try to check the conditions of the system.
-
-        A second thread will be started to log the metrics of the system.
-        """
         self.guard_thread = threading.Thread(target=self.guard)
         self.guard_thread.start()
 
     def should_scale(self, inbound_workload, current_mcl) -> bool:
-        """
-        Check the conditions of the system and return True if it should scale.
-        """
         return inbound_workload - (current_mcl - self.k_big) > self.k or \
-            (current_mcl - self.k_big) - inbound_workload > self.k
+               (current_mcl - self.k_big) - inbound_workload > self.k
     
     def _execute_prometheus_query(self, query: str):
-        """
-        Execute a query to the Prometheus server.
-        """
         try:
             data = self.prometheus_instance.custom_query(query)
             return float(data[0]['value'][1])
-        except (requests.exceptions.RequestException, KeyError, IndexError) as e:
-            pass
+        except (requests.exceptions.RequestException, KeyError, IndexError):
+            return None
 
     def guard(self) -> None:
-        """
-        This method is executed in a separate thread.
-        Check the conditions of the system and eventually scale it.
-        """
         print("Monitoring the system...")
         iter = 0
         last_pred_conf = []
@@ -90,28 +79,32 @@ class Guard:
         
         sleep_time = 1
         while self.running:
-            tot = self._execute_prometheus_query(f"sum(increase(http_requests_total_webUI_counter[{self.sleep}s]))")
-            completed = self._execute_prometheus_query(f"sum(increase(behaviour_execution[{self.sleep}s]))")    
-            latency = self._execute_prometheus_query(f"sum(increase(behaviour_time_execution[{self.sleep}s]))")
-            avg_lat = (latency if latency is not None else 0.0)/(completed if (completed is not None and completed > 0) else 1)
-            loss = self._execute_prometheus_query(f"sum(increase(message_lost_webUI[{self.sleep}s]))")
+            tot = self._execute_prometheus_query(
+                f"sum(increase({self.http_requests_metric}[{self.sleep}s]))"
+            )
+            completed = self._execute_prometheus_query(
+                f"sum(increase({self.behaviour_execution_metric}[{self.sleep}s]))"
+            )
+            latency = self._execute_prometheus_query(
+                f"sum(increase({self.behaviour_time_metric}[{self.sleep}s]))"
+            )
+            avg_lat = (latency if latency is not None else 0.0) / (completed if (completed is not None and completed > 0) else 1)
+            loss = self._execute_prometheus_query(
+                f"sum(increase({self.message_lost_metric}[{self.sleep}s]))"
+            )
 
             if tot is not None and (tot > 0 or iter > 0): 
                 sleep_time = self.sleep
-                
-                #reactivity
-                measured_workload = (tot if tot is not None else 0.0)/self.sleep
+                measured_workload = (tot if tot is not None else 0.0) / self.sleep
                 target_workload = measured_workload
                 
-                #proactivity
                 if iter > 0 and self.proactiveness:
-                    diff = iter-self.sleep
-                    pred_workload = sum(self.predictions[diff if diff > 0 else 0:iter])/self.sleep
+                    diff = iter - self.sleep
+                    pred_workload = sum(self.predictions[diff if diff > 0 else 0:iter]) / self.sleep
                     target_workload = pred_workload
                 
                 config = np.sum(self.scaler.get_current_config()) if not self.monitor_only else self._execute_prometheus_query("sum(total_instances_number)")
                 
-                #proactivity + reactivity:
                 mixed_workload = None
                 if iter > 0 and self.proactive_reactive:
                     measured_conf = self.scaler.calculate_configuration(measured_workload + self.k_big)

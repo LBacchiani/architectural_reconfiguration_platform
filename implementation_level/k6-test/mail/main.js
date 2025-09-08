@@ -91,7 +91,9 @@ export const options = {
 const BASE_URL = 'https://example.com/api/resource';
 
 export default function () {
-  const res = http.get(BASE_URL);
+  const res = http.post(BASE_URL, {}, {
+    headers: { 'Content-Type': 'application/json' },
+  });
   check(res, {
     'status is 2xx/3xx': (r) => r.status >= 200 && r.status < 400,
   });
