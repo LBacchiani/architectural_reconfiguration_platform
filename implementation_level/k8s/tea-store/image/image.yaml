@@ -6,11 +6,12 @@ spec:
   replicas: 2
   selector:
     matchLabels:
-      app: image
+      type: image-type
   template:
     metadata:
       labels:
-        app: image
+        type: image-type
+
     spec:
       containers:
         - name: image
@@ -39,13 +40,15 @@ apiVersion: v1
 kind: Service
 metadata:
   name: image-service
+  labels:
+    type: image-service-type
   annotations:
       prometheus.io/scrape: "true"
       prometheus.io/port: "80"
       prometheus.io/path: "/metrics"
 spec:
   selector:
-    app: image
+    type: image-type
   ports:
     - protocol: TCP
       port: 80

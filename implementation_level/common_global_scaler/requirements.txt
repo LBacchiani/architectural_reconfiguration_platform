@@ -4,3 +4,5 @@ numpy
 kubernetes
 requests
 pyyaml
+pulumi
+pulumi_kubernetes

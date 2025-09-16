@@ -1,12 +1,8 @@
-k3d-k3s-default-agent-0:
+giovserver:
+    resources:
+      cpu: 15880m
+      memory: 19880M
+giovworker:
   resources:
-    cpu: 7880m
-    memory: 39880M
-k3d-k3s-default-agent-1:
-  resources:
-    cpu: 9000m
-    memory: 40000M
-k3d-k3s-default-agent-2:
-  resources:
-    cpu: 8000m
+    cpu: 16000m
     memory: 40000M

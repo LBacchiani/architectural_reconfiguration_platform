@@ -6,11 +6,11 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      app: auth
+      type: auth-type
   template:
     metadata:
       labels:
-        app: auth
+        type: auth-type
     spec:
       containers:
         - name: auth
@@ -40,13 +40,15 @@ apiVersion: v1
 kind: Service
 metadata:
   name: auth-service
+  labels:
+    type: auth-service-type
   annotations:
       prometheus.io/scrape: "true"
       prometheus.io/port: "80"
       prometheus.io/path: "/metrics"   # optional, defaults to /metrics
 spec:
   selector:
-    app: auth
+    type: auth-type
   ports:
     - protocol: TCP
       port: 80

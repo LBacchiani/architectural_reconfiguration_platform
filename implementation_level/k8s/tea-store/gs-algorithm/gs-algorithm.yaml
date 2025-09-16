@@ -15,7 +15,7 @@ spec:
       containers:
         - name: gs-algorithm
           image: giovaz94/cgs-teastore
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           ports:
             - containerPort: 5000
           env:
@@ -51,6 +51,11 @@ spec:
               value: "2,1,1,0,2"
             - name: INCREMENT_2
               value: "1,1,1,0,2"
+            - name: PULUMI_ACCESS_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: pulumi-access
+                  key: PULUMI_ACCESS_TOKEN
       restartPolicy: Always
 ---
 apiVersion: v1

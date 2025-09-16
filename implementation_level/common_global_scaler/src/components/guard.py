@@ -31,7 +31,7 @@ class Guard:
         self.mixer = mixer
 
         prometheus_service_address = os.environ.get("PROMETHEUS_SERVICE_ADDRESS", "localhost")
-        prometheus_service_port = os.environ.get("PROMETHEUS_SERVICE_PORT", "64671")
+        prometheus_service_port = os.environ.get("PROMETHEUS_SERVICE_PORT", "55387")
 
         self.monitor_only = os.environ.get("MONITOR_ONLY", "false").lower() == 'true'
         prometheus_url = f"http://{prometheus_service_address}:{prometheus_service_port}"
