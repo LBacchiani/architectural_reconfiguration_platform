@@ -6,3 +6,17 @@ export *;
 
 def List<String> service_metrics() = list["tot", "rej"];
 def List<String> global_metrics() = list["tot", "comp", "latency", "supp", "rej", "inst"];
+
+def Int weightedChoice(Int n) =
+  let Int totalWeight = truncate(n * (n + 1) / 2),
+      Int r = when totalWeight > 0 then random(totalWeight) else -1
+  in
+    when totalWeight > 0 then weightedChoiceLoop(n, r, 0, 0) else -1;
+
+def Int weightedChoiceLoop(Int n, Int r, Int i, Int cumulative) =
+  when i >= n then
+    (when n > 0 then n - 1 else -1)
+  else
+    let Int newC = cumulative + (i + 1) in
+      when r < newC then i else weightedChoiceLoop(n, r, i + 1, newC);
+

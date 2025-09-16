@@ -12,7 +12,7 @@ interface AttachmentsManagerPlan{
 	Unit undeploy();
 }
 
-class AttachmentsManagerPlan(CloudProvider cloudProvider, PrometheusInterface prometheus, AttachmentsManager_LoadBalancerInterface attachmentsManager_LoadBalancerObj, ImageAnalyser_LoadBalancerInterface imageAnalyser_LoadBalancerObj) implements AttachmentsManagerPlan{
+class AttachmentsManagerPlan(CloudProvider cloudProvider, PrometheusInterface prometheus, AttachmentsManager_LoadBalancerInterface attachmentsManager_LoadBalancerObj, ImageAnalyser_LoadBalancerInterface imageAnalyser_LoadBalancerObj, DBInterface dbObj) implements AttachmentsManagerPlan{
 
 	List<List<AttachmentsManagerInterface>> ls_ls_AttachmentsManagerInterface = Nil;
 	List<AttachmentsManagerInterface> ls_AttachmentsManagerInterface = Nil;
@@ -73,7 +73,7 @@ class AttachmentsManagerPlan(CloudProvider cloudProvider, PrometheusInterface pr
 		DeploymentComponent c4_large_0 = cloudProvider.launchInstanceNamed("c4_large");
 		ls_DeploymentComponent = Cons(c4_large_0,ls_DeploymentComponent);
 		speedPatchMap = put(speedPatchMap,c4_large_0,0);
-		[DC: c4_large_0] AttachmentsManagerInterface odefault___AttachmentsManager_0_c4_large_0 = new AttachmentsManager(prometheus, imageAnalyser_LoadBalancerObj);
+		[DC: c4_large_0] AttachmentsManagerInterface odefault___AttachmentsManager_0_c4_large_0 = new AttachmentsManager(prometheus, imageAnalyser_LoadBalancerObj, dbObj);
 		Rat coreRequired_odefault___AttachmentsManager_0_c4_large_0 = 1;
 		speedPatchMap = put(speedPatchMap, c4_large_0, fromJust(lookup(speedPatchMap,c4_large_0)) + coreRequired_odefault___AttachmentsManager_0_c4_large_0);
 		ls_AttachmentsManagerInterface = Cons(odefault___AttachmentsManager_0_c4_large_0, ls_AttachmentsManagerInterface);

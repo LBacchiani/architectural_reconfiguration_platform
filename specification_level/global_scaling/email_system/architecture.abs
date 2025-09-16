@@ -3,17 +3,10 @@ module Architecture;
 export *;
 import * from ABS.DC;
 import * from ABS.SmartDeploy;
-import * from InvariantsDeployer;
-import * from BaseScale;
-import * from Scale1;
-import * from Scale2;
-import * from Scale3;
-import * from Scale4;
-import * from MsgRes;
 import * from DB;
 import * from Param;
 import * from Prometheus;
-import * from MsgRes;
+import * from Reconfig_Param;
 
 
 //////////////////////////////////CLOUD PROVIDER/////////////////////////
@@ -63,30 +56,31 @@ interface MessageParser_LoadBalancerInterface {
     Unit connectInstance(MessageParserInterface newInstance);
     MessageParserInterface disconnectInstance();
     Unit newRequest (String mailData);
-    Unit removeMessage();
+    Unit removeMessage ();
 }
 
 [SmartDeployCost : "{\"class\" : \"MessageParser_LoadBalancer\",\"scenarios\" : [{\"name\" : \"default\",\"provide\" : -1,\"cost\" : {\"Cores\" : 2,\"Memory\" : 200},\"sig\" : [{\"kind\" : \"require\",\"type\" : \"PrometheusInterface\"}, {\"kind\" : \"require\",\"type\" : \"DBInterface\"}], \"methods\" : [{\"add\" : {\"name\" : \"connectInstance\",\"param_type\" : \"MessageParserInterface\"},\"remove\" : {\"name\" : \"disconnectInstance\", \"return_type\": \"MessageParserInterface\"}}]}]}"]
 class MessageParser_LoadBalancer(PrometheusInterface prometheus, DBInterface db) implements MessageParser_LoadBalancerInterface {
   List<MessageParserInterface> instancesConnected = list[];
   Int nextInstance = -1;
-  Int pending = 0;
   Int id = 0;
   Metric total;
-  Metric loss;
   Metric globalTotal;
-
+  Metric loss;
+  Int pending = 0;
   {
-      total = new local DiscreteMetric(Pair("tot","Parser"));
       loss = new local DiscreteMetric(Pair("rej",global_service_name()));
+      total = new local DiscreteMetric(Pair("tot","Parser"));
       globalTotal = new local DiscreteMetric(Pair("tot",global_service_name()));
-      prometheus!register(list[total,loss,globalTotal]);
+      prometheus!register(list[total,globalTotal,loss]);
   }
 
-  Unit connectInstance(MessageParserInterface newInstance){instancesConnected = appendright(instancesConnected, newInstance);}
+  Unit connectInstance(MessageParserInterface newInstance){
+    instancesConnected = appendright(instancesConnected, newInstance);
+  }
 
   MessageParserInterface disconnectInstance(){
-    MessageParserInterface removedInstance = nth(instancesConnected, length(instancesConnected)-1);
+    MessageParserInterface removedInstance = nth(instancesConnected, length(instancesConnected) - 1);
     instancesConnected = without(instancesConnected, removedInstance);
     return removedInstance;
   }
@@ -94,68 +88,47 @@ class MessageParser_LoadBalancer(PrometheusInterface prometheus, DBInterface db)
   Unit newRequest (String mailData){
     globalTotal!push(1);
     total!push(1);
-    if(pending < buffer_size()) {
-      nextInstance = (nextInstance + 1) % length(instancesConnected);
-      MessageParserInterface selectedInstance = nth(instancesConnected, nextInstance);
+      //Int n = length(instancesConnected);
+      //Int nextInstance = weightedChoice(n)
+      //MessageParserInterface selectedInstance = nth(instancesConnected, nextInstance);
+    if (pending < buffer_size()) {
       pending = pending + 1;
-      selectedInstance!parseMessage(mailData, this, id);
+      nextInstance = (nextInstance + 1) % length(instancesConnected);  
+      MessageParserInterface selectedInstance = nth(instancesConnected, nextInstance);
+      selectedInstance!parseMessage(id, this);
       id = id + 1;
     } else {
       loss!push(1);
     }
   }
 
-  Unit removeMessage() {pending = pending - 1;}
-
+  Unit removeMessage () {
+    pending = pending - 1;
+  }
 }
 
 interface MessageParserInterface {
-  Unit parseMessage (String mailData, MessageParser_LoadBalancerInterface balancer, Int id);
+  Unit parseMessage (Int id, MessageParser_LoadBalancerInterface balancer);
 }
 
 [SmartDeployCost : "{\"class\" : \"MessageParser\",\"scenarios\" : [{\"name\" : \"default\",\"provide\" : -1,\"cost\" : {\"Cores\" : 1,\"Memory\" : 100},\"sig\" : [{\"kind\" : \"require\",\"type\" : \"PrometheusInterface\"},{\"kind\" : \"require\",\"type\" : \"HeaderAnalyser_LoadBalancerInterface\"}, {\"kind\" : \"require\",\"type\" : \"LinkAnalyser_LoadBalancerInterface\"}, {\"kind\" : \"require\",\"type\" : \"TextAnalyser_LoadBalancerInterface\"}, {\"kind\" : \"require\",\"type\" : \"VirusScanner_LoadBalancerInterface\"}, {\"kind\" : \"require\",\"type\" : \"MessageAnalyser_LoadBalancerInterface\"}, {\"kind\" : \"require\",\"type\" : \"DBInterface\"}],\"methods\" : []}]}"]
 class MessageParser(PrometheusInterface prometheus, HeaderAnalyser_LoadBalancerInterface headerAnalyserLoadBalancer, LinkAnalyser_LoadBalancerInterface linkAnalyserLoadBalancer, TextAnalyser_LoadBalancerInterface textAnalyserLoadBalancer, VirusScanner_LoadBalancerInterface virusScannerLoadBalancer, MessageAnalyser_LoadBalancerInterface messageAnalyserLoadBalancer, DBInterface db) implements MessageParserInterface {
   Int cores = 1;
-  // Metric completed;
-  // {
-  //     completed = new local DiscreteMetric(Pair("comp","Parser"));
-  //     prometheus!register(list[completed]);        
-  // }
-  Unit parseMessage (String mailData, MessageParser_LoadBalancerInterface balancer, Int id){
-		//cost to parse the message
-		[Cost: speed_per_core() * time_unit_to_sec() *  cores / nth(serviceMCLs(),0)] skip;
+
+  Unit parseMessage (Int id, MessageParser_LoadBalancerInterface balancer){
+    [Cost: speed_per_core() * time_unit_to_sec() *  cores / nth(serviceMCLs(),0)] skip;
+    Rat received_at = timeValue(now());
     balancer!removeMessage();
-    // completed!push(1);
-    String headers = mailData + "_NetworkHeaders";
-    String sender = mailData + "_Sender";
-    String messageHeader = mailData + "_MessageHeader";
-    String messageBody = mailData + "_MessageBody";
-    Set<String> links = set[];
     Set<String> attachments = set[];
-    Int n_links = random(11);
     Int n_attachments = random(5);
-    Int i = 0;
-    while (i < n_links) {
-      links = insertElement(links, mailData + "_Link" + toString(i));
-      i = i + 1;
-    }
-    i = 0;
-    while (i < n_attachments) {
-      attachments = insertElement(attachments, mailData + "_Attachment" + toString(i));
-      i = i + 1;
-    }
-    //insert message information
     String messageId = toString(id);
-    db.insertMessageInformation(messageId, n_attachments);
-    headerAnalyserLoadBalancer!newRequest(headers, messageId);
-    if(n_links > 0){linkAnalyserLoadBalancer!newRequest(links, messageId);}
-    else{messageAnalyserLoadBalancer!insertResult("", messageId);}
-    if(messageHeader != "" || messageBody != ""){textAnalyserLoadBalancer!newRequest(messageHeader, messageBody, messageId);}
-    else{messageAnalyserLoadBalancer!insertResult("", messageId);}
-    while(size(attachments)>0){
-      String attach = take(attachments);
-      attachments = remove(attachments, attach);
-      virusScannerLoadBalancer!newRequest(attach, messageId);
+    db.insertMessageInformation(messageId, 3+n_attachments);
+    headerAnalyserLoadBalancer!newRequest(messageId,received_at);
+    linkAnalyserLoadBalancer!newRequest(messageId,received_at);
+    textAnalyserLoadBalancer!newRequest(messageId,received_at);
+    while(n_attachments > 0){
+      virusScannerLoadBalancer!newRequest(messageId,received_at);
+      n_attachments = n_attachments - 1;
     }
   }
 }
@@ -164,7 +137,7 @@ class MessageParser(PrometheusInterface prometheus, HeaderAnalyser_LoadBalancerI
 interface HeaderAnalyser_LoadBalancerInterface {
     Unit connectInstance(HeaderAnalyserInterface newInstance);
     HeaderAnalyserInterface disconnectInstance();
-    Unit newRequest (String headers, String messageId);
+    Unit newRequest (String messageId, Rat received_at);
 }
 
 [SmartDeployCost : "{\"class\" : \"HeaderAnalyser_LoadBalancer\", \"scenarios\" : [{ \"name\" : \"default\", \"provide\" : -1, \"cost\" : { \"Cores\" : 2, \"Memory\" : 200 }, \"sig\" : [{\"kind\" : \"require\",\"type\" : \"PrometheusInterface\"}, {\"kind\" : \"require\",\"type\" : \"DBInterface\"}], \"methods\" : [{ \"add\" : { \"name\" : \"connectInstance\", \"param_type\" : \"HeaderAnalyserInterface\" }, \"remove\" : { \"name\" : \"disconnectInstance\", \"return_type\": \"HeaderAnalyserInterface\" }}]}]}"]
@@ -175,34 +148,33 @@ class HeaderAnalyser_LoadBalancer(PrometheusInterface prometheus, DBInterface db
   Unit connectInstance(HeaderAnalyserInterface newInstance){instancesConnected = appendright(instancesConnected, newInstance);}
 
   HeaderAnalyserInterface disconnectInstance(){
-    HeaderAnalyserInterface removedInstance = nth(instancesConnected, length(instancesConnected)-1);
+    HeaderAnalyserInterface removedInstance = nth(instancesConnected,length(instancesConnected) - 1);
     instancesConnected = without(instancesConnected, removedInstance);
     return removedInstance;
   }
 
-  Unit newRequest (String headers, String messageId){
+  Unit newRequest (String messageId, Rat received_at){
       HeaderAnalyserInterface selectedInstance = nth(instancesConnected, 0);
-      selectedInstance.analyzeHeaders(headers, messageId);
+      selectedInstance!analyzeHeaders(messageId, received_at);
   }
 }
 
 interface HeaderAnalyserInterface {
-  Unit analyzeHeaders (String headers, String messageId);
+  Unit analyzeHeaders (String messageId, Rat received_at);
 }
 
 [SmartDeployCost : "{\"class\" : \"HeaderAnalyser\",\"scenarios\" : [{\"name\" : \"default\",\"provide\" : -1,\"cost\" : {\"Cores\" : 2,\"Memory\" : 200},\"sig\" : [{\"kind\" : \"require\",\"type\" : \"PrometheusInterface\"}, {\"kind\" : \"require\",\"type\" : \"MessageAnalyser_LoadBalancerInterface\"}],\"methods\" : []}]}"]
 class HeaderAnalyser(PrometheusInterface prometheus, MessageAnalyser_LoadBalancerInterface messageAnalyserLoadBalancer) implements HeaderAnalyserInterface {
 
-  Unit analyzeHeaders (String headers, String messageId) {
-    String res = "Results of HeaderAnalysis (" + headers + ") by HeaderAnalyser in " + toString(thisDC());
-    messageAnalyserLoadBalancer!insertResult(res, messageId);
+  Unit analyzeHeaders (String messageId, Rat received_at) {
+    messageAnalyserLoadBalancer!insertResult(messageId, received_at);
   }
 }
 
 interface LinkAnalyser_LoadBalancerInterface {
   Unit connectInstance(LinkAnalyserInterface newInstance);
   LinkAnalyserInterface disconnectInstance();
-  Unit newRequest (Set<String> links, String messageId);
+  Unit newRequest(String messageId, Rat received_at);
 }
 
 [SmartDeployCost : "{\"class\" : \"LinkAnalyser_LoadBalancer\",\"scenarios\" : [{\"name\" : \"default\",\"provide\" : -1,\"cost\" : {\"Cores\" : 2,\"Memory\" : 200},\"sig\" : [{\"kind\" : \"require\",\"type\" : \"PrometheusInterface\"},{\"kind\" : \"require\",\"type\" : \"DBInterface\"}], \"methods\" : [{\"add\" : {\"name\" : \"connectInstance\",\"param_type\" : \"LinkAnalyserInterface\"},\"remove\" : {\"name\" : \"disconnectInstance\", \"return_type\": \"LinkAnalyserInterface\"}}]}]}"]
@@ -213,33 +185,32 @@ class LinkAnalyser_LoadBalancer(PrometheusInterface prometheus, DBInterface db) 
   Unit connectInstance(LinkAnalyserInterface newInstance){instancesConnected = appendright(instancesConnected, newInstance);}
 
   LinkAnalyserInterface disconnectInstance(){
-    LinkAnalyserInterface removedInstance = nth(instancesConnected, length(instancesConnected)-1);
+    LinkAnalyserInterface removedInstance = nth(instancesConnected,length(instancesConnected) - 1);
     instancesConnected = without(instancesConnected, removedInstance);
     return removedInstance;
   }
 
-  Unit newRequest (Set<String> links, String messageId){
+  Unit newRequest(String messageId, Rat received_at){
     LinkAnalyserInterface selectedInstance = nth(instancesConnected, 0);
-    selectedInstance!analyzeLink(links, messageId);
+    selectedInstance!analyzeLink(messageId, received_at);
   }
 }
 
 interface LinkAnalyserInterface {
-  Unit analyzeLink (Set<String> links, String messageId);
+  Unit analyzeLink (String messageId, Rat received_at);
 }
 
 [SmartDeployCost : "{\"class\" : \"LinkAnalyser\",\"scenarios\" : [{\"name\" : \"default\",\"provide\" : -1,\"cost\" : {\"Cores\" : 2,\"Memory\" : 200},\"sig\" : [{\"kind\" : \"require\",\"type\" : \"PrometheusInterface\"},{\"kind\" : \"require\",\"type\" : \"MessageAnalyser_LoadBalancerInterface\"}],\"methods\" : []}]}"]
 class LinkAnalyser(PrometheusInterface prometheus, MessageAnalyser_LoadBalancerInterface messageAnalyserLoadBalancer) implements LinkAnalyserInterface {
-  Unit analyzeLink (Set<String> links, String messageId) {
-    String res = "Results of LinkAnalysis by LinkAnalyser in " + toString(thisDC());
-    messageAnalyserLoadBalancer!insertResult(res, messageId);
+  Unit analyzeLink (String messageId, Rat received_at) {
+    messageAnalyserLoadBalancer!insertResult(messageId, received_at);
   }
 }
 
 interface TextAnalyser_LoadBalancerInterface {
   Unit connectInstance(TextAnalyserInterface newInstance);
   TextAnalyserInterface disconnectInstance();
-  Unit newRequest (String messageHeader, String messageBody, String messageId);
+  Unit newRequest(String messageId, Rat received_at);
 }
 
 [SmartDeployCost : "{\"class\" : \"TextAnalyser_LoadBalancer\",\"scenarios\" : [{\"name\" : \"default\",\"provide\" : -1,\"cost\" : {\"Cores\" : 2,\"Memory\" : 200},\"sig\" : [{\"kind\" : \"require\",\"type\" : \"PrometheusInterface\"},{\"kind\" : \"require\",\"type\" : \"DBInterface\"}], \"methods\" : [{\"add\" : {\"name\" : \"connectInstance\",\"param_type\" : \"TextAnalyserInterface\"},\"remove\" : {\"name\" : \"disconnectInstance\", \"return_type\": \"TextAnalyserInterface\"}}]}]}"]
@@ -250,31 +221,26 @@ class TextAnalyser_LoadBalancer(PrometheusInterface prometheus, DBInterface db) 
   Unit connectInstance(TextAnalyserInterface newInstance){instancesConnected = appendright(instancesConnected, newInstance);}
 
   TextAnalyserInterface disconnectInstance(){
-    TextAnalyserInterface removedInstance = nth(instancesConnected, length(instancesConnected)-1);
+    TextAnalyserInterface removedInstance = nth(instancesConnected,length(instancesConnected) - 1);
     instancesConnected = without(instancesConnected, removedInstance);
     return removedInstance;
   }
 
-  Unit newRequest (String messageHeader, String messageBody, String messageId){
+  Unit newRequest(String messageId, Rat received_at){
     TextAnalyserInterface selectedInstance = nth(instancesConnected, 0);
-    selectedInstance!analyzeText(messageHeader, messageBody, messageId);
+    selectedInstance!analyzeText(messageId, received_at);
   }
 }
 
 interface TextAnalyserInterface {
-  Unit analyzeText (String messageHeader, String messageBody, String messageId);
+  Unit analyzeText(String messageId, Rat received_at);
 }
 
 [SmartDeployCost : "{\"class\" : \"TextAnalyser\",\"scenarios\" : [{\"name\" : \"default\",\"provide\" : -1,\"cost\" : {\"Cores\" : 2,\"Memory\" : 200},\"sig\" : [{\"kind\" : \"require\",\"type\" : \"PrometheusInterface\"},\"kind\" : \"require\",\"type\" : \"MessageAnalyser_LoadBalancerInterface\"}],\"methods\" : []}]}"]
 class TextAnalyser(PrometheusInterface prometheus, MessageAnalyser_LoadBalancerInterface messageAnalyserLoadBalancer) implements TextAnalyserInterface {
 
-  Unit analyzeText (String messageHeader, String messageBody, String messageId) {
-    Bool refused = False;
-    if(messageHeader != ""){}//message header analysis
-    String sentimentAnalysisResults = "";
-    
-    String res = "Results of TextAnalysis by TextAnalyser in " + toString(thisDC()) + " on: \n \t\t" + messageHeader + "\n \t\t" + messageBody;
-    messageAnalyserLoadBalancer!insertResult(res, messageId);
+  Unit analyzeText (String messageId, Rat received_at) {    
+    messageAnalyserLoadBalancer!insertResult(messageId, received_at);
   }
 }
 
@@ -282,48 +248,52 @@ class TextAnalyser(PrometheusInterface prometheus, MessageAnalyser_LoadBalancerI
 interface VirusScanner_LoadBalancerInterface {
   Unit connectInstance(VirusScannerInterface newInstance);
   VirusScannerInterface disconnectInstance();
-  Unit newRequest (String attachment, String messageId);
-  Unit removeMessage();
+  Unit newRequest (String messageId, Rat received_at);
+  Unit removeMessage ();
 }
 
 [SmartDeployCost : "{\"class\" : \"VirusScanner_LoadBalancer\",\"scenarios\" : [{\"name\" : \"default\",\"provide\" : -1,\"cost\" : {\"Cores\" : 2,\"Memory\" : 200},\"sig\" : [{\"kind\" : \"require\",\"type\" : \"PrometheusInterface\"},{\"kind\" : \"require\",\"type\" : \"DBInterface\"}], \"methods\" : [{\"add\" : {\"name\" : \"connectInstance\",\"param_type\" : \"VirusScannerInterface\"},\"remove\" : {\"name\" : \"disconnectInstance\", \"return_type\": \"VirusScannerInterface\"}}]}]}"]
-class VirusScanner_LoadBalancer(PrometheusInterface prometheus,DBInterface db)  implements VirusScanner_LoadBalancerInterface {
+class VirusScanner_LoadBalancer(PrometheusInterface prometheus, DBInterface db)  implements VirusScanner_LoadBalancerInterface {
   List<VirusScannerInterface> instancesConnected = list[];
   Int nextInstance = -1;
-  Int pending = 0;
   Metric total;
-  Metric loss;
-    {
-        total = new local DiscreteMetric(Pair("tot","VirusScanner"));
-        loss = new local DiscreteMetric(Pair("rej",global_service_name()));
-        prometheus!register(list[total,loss]);
-    }
+  Int pending = 0;
+  {
+      total = new local DiscreteMetric(Pair("tot","VirusScanner"));
+      prometheus!register(list[total]);
+  }
 
-  Unit connectInstance(VirusScannerInterface newInstance){instancesConnected = appendright(instancesConnected, newInstance);}
+  Unit connectInstance(VirusScannerInterface newInstance) {
+    instancesConnected = appendright(instancesConnected, newInstance);
+  }
 
   VirusScannerInterface disconnectInstance(){
-    VirusScannerInterface removedInstance = nth(instancesConnected, length(instancesConnected)-1);
+    VirusScannerInterface removedInstance = nth(instancesConnected,length(instancesConnected) - 1);
     instancesConnected = without(instancesConnected, removedInstance);
     return removedInstance;
   }
 
-  Unit newRequest (String attachment, String messageId){
-    if(pending < buffer_size()) {
-      nextInstance = (nextInstance + 1) % length(instancesConnected);
-      VirusScannerInterface selectedInstance = nth(instancesConnected, nextInstance);
+  Unit newRequest (String messageId, Rat received_at){
+    total!push(1);
+    if (pending < buffer_size()) {
       pending = pending + 1;
-      selectedInstance!scanAttachment(attachment, messageId, this);
+      nextInstance = (nextInstance + 1) % length(instancesConnected);  
+      VirusScannerInterface selectedInstance = nth(instancesConnected, nextInstance);
+      selectedInstance!scanAttachment(messageId,received_at,this);
     } else {
-      Bool removed = await db!removeMessage(messageId);
-      if (removed) loss!push(1);
+      db!removeMessage(messageId);
     }
   }
 
-  Unit removeMessage() {pending = pending - 1;}
+  Unit removeMessage () {
+    pending = pending - 1;
+
+  }
+
 }
 
 interface VirusScannerInterface {
-  Unit scanAttachment (String attachment, String messageId, VirusScanner_LoadBalancerInterface balancer);
+  Unit scanAttachment(String messageId, Rat received_at, VirusScanner_LoadBalancerInterface balancer);
 }
 
 [SmartDeployCost : "{\"class\" : \"VirusScanner\",\"scenarios\" : [{\"name\" : \"default\",\"provide\" : -1,\"cost\" : {\"Cores\" : 4,\"Memory\" : 600},\"sig\" : [{ \"kind\" : \"require\",\"type\" : \"PrometheusInterface\" },{ \"kind\" : \"require\",\"type\" : \"AttachmentsManager_LoadBalancerInterface\" }, { \"kind\" : \"require\",\"type\" : \"MessageAnalyser_LoadBalancerInterface\" }],\"methods\" : []}]}"]
@@ -331,16 +301,15 @@ class VirusScanner(PrometheusInterface prometheus, AttachmentsManager_LoadBalanc
   Int cores = 4;
 
 
-  Unit scanAttachment (String attachment, String messageId, VirusScanner_LoadBalancerInterface balancer){
-    //scan attachment
+  Unit scanAttachment(String messageId, Rat received_at, VirusScanner_LoadBalancerInterface balancer) {
     [Cost: speed_per_core() * time_unit_to_sec() * cores / nth(serviceMCLs(),4)] skip;
     balancer!removeMessage();
     Bool virusFound = random(4) == 0;
     if (virusFound) { 
-      messageAnalyserLoadBalancer!insertResult("VirusFound from VirusScanner in attachment: " + attachment + " by VirusScanner in " + toString(thisDC()), messageId);
+      messageAnalyserLoadBalancer!insertResult(messageId, received_at);
     }
     else { 
-      attachmentsManagerLoadBalancer!newRequest(attachment, messageId);
+      attachmentsManagerLoadBalancer!newRequest(messageId, received_at);
     }
   }
 }
@@ -348,81 +317,81 @@ class VirusScanner(PrometheusInterface prometheus, AttachmentsManager_LoadBalanc
 interface AttachmentsManager_LoadBalancerInterface {
   Unit connectInstance(AttachmentsManagerInterface newInstance);
   AttachmentsManagerInterface disconnectInstance();
-  Unit newRequest (String attachment, String messageId);
+  Unit newRequest (String messageId, Rat received_at);
   Unit removeMessage();
 }
 
 [SmartDeployCost : "{\"class\" : \"AttachmentsManager_LoadBalancer\",\"scenarios\" : [{\"name\" : \"default\",\"provide\" : -1,\"cost\" : {\"Cores\" : 2,\"Memory\" : 200},\"sig\" : [{\"kind\" : \"require\",\"type\" : \"PrometheusInterface\"},{\"kind\" : \"require\",\"type\" : \"DBInterface\"}], \"methods\" : [{\"add\" : {\"name\" : \"connectInstance\",\"param_type\" : \"AttachmentsManagerInterface\"},\"remove\" : {\"name\" : \"disconnectInstance\", \"return_type\": \"AttachmentsManagerInterface\"}}]}]}"]
-class AttachmentsManager_LoadBalancer(PrometheusInterface prometheus,DBInterface db)  implements AttachmentsManager_LoadBalancerInterface {
+class AttachmentsManager_LoadBalancer(PrometheusInterface prometheus, DBInterface db)  implements AttachmentsManager_LoadBalancerInterface {
   List<AttachmentsManagerInterface> instancesConnected = list[];
   Int nextInstance = -1;
-  Int pending = 0;
   Metric total;
-  Metric loss;
-    {
-        total = new local DiscreteMetric(Pair("tot","AttachmentsManager"));
-        loss = new local DiscreteMetric(Pair("rej",global_service_name()));
-        prometheus!register(list[total,loss]);
-    }
+  Int pending = 0;
+  {
+      total = new local DiscreteMetric(Pair("tot","AttachmentsManager"));
+      prometheus!register(list[total]);
+  }
 
-  Unit connectInstance(AttachmentsManagerInterface newInstance){instancesConnected = appendright(instancesConnected, newInstance);}
+  Unit connectInstance(AttachmentsManagerInterface newInstance){
+    instancesConnected = appendright(instancesConnected, newInstance);
+  }
 
   AttachmentsManagerInterface disconnectInstance(){
-    AttachmentsManagerInterface removedInstance = nth(instancesConnected, length(instancesConnected)-1);
+    AttachmentsManagerInterface removedInstance = nth(instancesConnected,length(instancesConnected) - 1);
     instancesConnected = without(instancesConnected, removedInstance);
     return removedInstance;
   }
 
-  Unit newRequest (String attachment, String messageId){
+  Unit newRequest (String messageId, Rat received_at){
     total!push(1);
-    if(pending < buffer_size()) {
-      nextInstance = (nextInstance + 1) % length(instancesConnected);
-      AttachmentsManagerInterface selectedInstance = nth(instancesConnected, nextInstance);
+    if (pending < buffer_size()) {
       pending = pending + 1;
-      selectedInstance!manageAttachments(attachment, messageId, this);
+      nextInstance = (nextInstance + 1) % length(instancesConnected);  
+      AttachmentsManagerInterface selectedInstance = nth(instancesConnected, nextInstance);      
+      selectedInstance!manageAttachments(messageId,received_at,this);
     } else {
-      Bool removed = await db!removeMessage(messageId);
-      if (removed) loss!push(1);
+      db!removeMessage(messageId);
     }
   }
 
-  Unit removeMessage() {pending = pending - 1;}
+  Unit removeMessage () {
+    pending = pending - 1;
+
+  }
+
 }
 
 interface AttachmentsManagerInterface {
-  Unit manageAttachments(String attachment, String messageId, AttachmentsManager_LoadBalancerInterface balancer);
+  Unit manageAttachments(String messageId, Rat received_at, AttachmentsManager_LoadBalancerInterface balancer);
 }
 
 [SmartDeployCost : "{\"class\" : \"AttachmentsManager\",\"scenarios\" : [{\"name\" : \"default\",\"provide\" : -1,\"cost\" : {\"Cores\" : 1,\"Memory\" : 100},\"sig\" : [ { \"kind\" : \"require\",\"type\" : \"PrometheusInterface\" },{ \"kind\" : \"require\",\"type\" : \"ImageAnalyser_LoadBalancerInterface\" }],\"methods\" : []}]}"]
 class AttachmentsManager(PrometheusInterface prometheus,ImageAnalyser_LoadBalancerInterface imageAnalyserLoadBalancer) implements AttachmentsManagerInterface {
   Int cores = 1;
 
-  Unit manageAttachments(String attachment, String messageId, AttachmentsManager_LoadBalancerInterface balancer){
-    //cost to decide the extension/type of an attachment
+  Unit manageAttachments(String messageId, Rat received_at, AttachmentsManager_LoadBalancerInterface balancer){
     [Cost: speed_per_core() * time_unit_to_sec() * cores / nth(serviceMCLs(),5)] skip;
     balancer!removeMessage();
-    imageAnalyserLoadBalancer!newRequest(attachment, messageId);
+    imageAnalyserLoadBalancer!newRequest(messageId, received_at);
   }
 }
 
 interface ImageAnalyser_LoadBalancerInterface {
   Unit connectInstance(ImageAnalyserInterface newInstance);
   ImageAnalyserInterface disconnectInstance();
-  Unit newRequest (String image, String messageId);
+  Unit newRequest(String messageId, Rat received_at);
   Unit removeMessage();
 }
 
 [SmartDeployCost : "{\"class\" : \"ImageAnalyser_LoadBalancer\",\"scenarios\" : [{\"name\" : \"default\",\"provide\" : -1,\"cost\" : {\"Cores\" : 2,\"Memory\" : 200},\"sig\" : [{\"kind\" : \"require\",\"type\" : \"PrometheusInterface\"},{\"kind\" : \"require\",\"type\" : \"DBInterface\"}], \"methods\" : [{\"add\" : {\"name\" : \"connectInstance\",\"param_type\" : \"ImageAnalyserInterface\"},\"remove\" : {\"name\" : \"disconnectInstance\", \"return_type\": \"ImageAnalyserInterface\"}}]}]}"]
-class ImageAnalyser_LoadBalancer(PrometheusInterface prometheus,DBInterface db)  implements ImageAnalyser_LoadBalancerInterface {
+class ImageAnalyser_LoadBalancer(PrometheusInterface prometheus, DBInterface db)  implements ImageAnalyser_LoadBalancerInterface {
   List<ImageAnalyserInterface> instancesConnected = list[];
   Int nextInstance = -1;
-  Int pending = 0;
   Metric total;
-  Metric loss;
+  Int pending = 0;
   {
       total = new local DiscreteMetric(Pair("tot","ImageAnalyser"));
-      loss = new local DiscreteMetric(Pair("rej",global_service_name()));
-      prometheus!register(list[total,loss]);
+      prometheus!register(list[total]);
   }
 
   Unit connectInstance(ImageAnalyserInterface newInstance){
@@ -430,112 +399,111 @@ class ImageAnalyser_LoadBalancer(PrometheusInterface prometheus,DBInterface db) 
   }
 
   ImageAnalyserInterface disconnectInstance(){
-    ImageAnalyserInterface removedInstance = nth(instancesConnected, length(instancesConnected)-1);
+    ImageAnalyserInterface removedInstance = nth(instancesConnected,length(instancesConnected) - 1);
     instancesConnected = without(instancesConnected, removedInstance);
     return removedInstance;
   }
 
-  Unit newRequest (String image, String messageId){
+  Unit newRequest (String messageId, Rat received_at){
     total!push(1);
-    if(pending < buffer_size()) {
-      nextInstance = (nextInstance + 1) % length(instancesConnected);
-      ImageAnalyserInterface selectedInstance = nth(instancesConnected, nextInstance);
+      //Int n = length(instancesConnected);
+      //Int nextInstance = weightedChoice(n)
+      //ImageAnalyserInterface selectedInstance = nth(instancesConnected, nextInstance);
+
+    if (pending < buffer_size()) {
       pending = pending + 1;
-      selectedInstance!analyzeImage(image, messageId, this, db);
+      nextInstance = (nextInstance + 1) % length(instancesConnected);  
+      ImageAnalyserInterface selectedInstance = nth(instancesConnected, nextInstance);      
+      selectedInstance!analyzeImage(messageId, received_at, this);
     } else {
-      Bool removed = await db!removeMessage(messageId);
-      if (removed) loss!push(1);
+      db!removeMessage(messageId);
     }
   }
 
-  Unit removeMessage() {pending = pending - 1;}
+  Unit removeMessage () {
+    pending = pending - 1;
+
+  }
 }
 
 interface ImageAnalyserInterface {
-  Unit analyzeImage (String image, String messageId, ImageAnalyser_LoadBalancerInterface balancer,  DBInterface db);
+  Unit analyzeImage(String messageId, Rat received_at, ImageAnalyser_LoadBalancerInterface balancer);
 }
 
 [SmartDeployCost : "{\"class\" : \"ImageAnalyser\",\"scenarios\" : [{\"name\" : \"default\",\"provide\" : -1,\"cost\" : {\"Cores\" : 1,\"Memory\" : 200},\"sig\" : [{ \"kind\" : \"require\",\"type\" : \"PrometheusInterface\" },{ \"kind\" : \"require\",\"type\" : \"MessageAnalyser_LoadBalancerInterface\" }],\"methods\" : []}]}"]
 class ImageAnalyser(PrometheusInterface prometheus, MessageAnalyser_LoadBalancerInterface messageAnalyserLoadBalancer) implements ImageAnalyserInterface {
   Int cores = 1;
 
-  Unit analyzeImage (String image, String messageId, ImageAnalyser_LoadBalancerInterface balancer, DBInterface db){
-    [Cost: speed_per_core() * time_unit_to_sec() * cores / nth(serviceMCLs(),6)] skip;
-    balancer!removeMessage();
-    messageAnalyserLoadBalancer!insertResult("ok", messageId);
+  Unit analyzeImage (String messageId, Rat received_at, ImageAnalyser_LoadBalancerInterface balancer){
+      [Cost: speed_per_core() * time_unit_to_sec() * cores / nth(serviceMCLs(),6)] skip;
+      balancer!removeMessage();
+      messageAnalyserLoadBalancer!insertResult(messageId, received_at);
   }
 }
 
 interface MessageAnalyser_LoadBalancerInterface {
   Unit connectInstance(MessageAnalyserInterface newInstance);
   MessageAnalyserInterface disconnectInstance();
-	Unit insertResult(String res, String id);
-  Unit removeMessage();
+	Unit insertResult(String id, Rat received_at);
+  Unit removeMessage ();
 }
 
 [SmartDeployCost : "{\"class\" : \"MessageAnalyser_LoadBalancer\",\"scenarios\" : [{\"name\" : \"default\",\"provide\" : -1,\"cost\" : {\"Cores\" : 2,\"Memory\" : 200},\"sig\" : [{\"kind\" : \"require\",\"type\" : \"PrometheusInterface\"},{\"kind\" : \"require\",\"type\" : \"DBInterface\"}], \"methods\" : [{\"add\" : {\"name\" : \"connectInstance\",\"param_type\" : \"MessageAnalyserInterface\"},\"remove\" : {\"name\" : \"disconnectInstance\", \"return_type\": \"MessageAnalyserInterface\"}}]}]}"]
 class MessageAnalyser_LoadBalancer(PrometheusInterface prometheus,DBInterface db)  implements MessageAnalyser_LoadBalancerInterface {
   List<MessageAnalyserInterface> instancesConnected = list[];
   Int nextInstance = -1;
-  Int pending = 0;
   Metric total;
-  Metric loss;
+  Int pending = 0;
   {
       total = new local DiscreteMetric(Pair("tot","MessageAnalyser"));
-      loss = new local DiscreteMetric(Pair("rej",global_service_name()));
-      prometheus!register(list[total,loss]);
+      prometheus!register(list[total]);
   }
 
-  Unit connectInstance(MessageAnalyserInterface newInstance){instancesConnected = appendright(instancesConnected, newInstance);}
+  Unit connectInstance(MessageAnalyserInterface newInstance){
+    instancesConnected = appendright(instancesConnected, newInstance);
+  }
 
   MessageAnalyserInterface disconnectInstance(){
-    MessageAnalyserInterface removedInstance = nth(instancesConnected, length(instancesConnected)-1);
+    MessageAnalyserInterface removedInstance = nth(instancesConnected,length(instancesConnected) - 1);
     instancesConnected = without(instancesConnected, removedInstance);
     return removedInstance;
   }
 
-  Unit insertResult(String res, String id){
+  Unit insertResult(String id, Rat received_at){
     total!push(1);
-    if(pending < buffer_size()) {
-      nextInstance = (nextInstance + 1) % length(instancesConnected);
-      MessageAnalyserInterface selectedInstance = nth(instancesConnected, nextInstance);
+      //Int n = length(instancesConnected);
+      //Int nextInstance = weightedChoice(n)
+      //MessageAnalyserInterface selectedInstance = nth(instancesConnected, nextInstance);
+
+    if (pending < buffer_size()) {
       pending = pending + 1;
-      selectedInstance!insertResult(res, id, this);
+      nextInstance = (nextInstance + 1) % length(instancesConnected);  
+      MessageAnalyserInterface selectedInstance = nth(instancesConnected, nextInstance);
+      selectedInstance!insertResult(id,received_at,this);
     } else {
-      Bool removed = await db!removeMessage(id);
-      if (removed) loss!push(1);
+      db!removeMessage(id);
     }
 	}
 
-  Unit removeMessage() {pending = pending - 1;}
+  Unit removeMessage () {
+    pending = pending - 1;
+  }
+
 }
 
 interface MessageAnalyserInterface {
-    Unit insertResult(String res, String id, MessageAnalyser_LoadBalancerInterface balancer);
+    Unit insertResult(String id, Rat received_at, MessageAnalyser_LoadBalancerInterface balancer);
 }
 
 [SmartDeployCost : "{\"class\" : \"MessageAnalyser\",\"scenarios\" : [{\"name\" : \"default\",\"provide\" : -1,\"cost\" : {\"Cores\" : 1,\"Memory\" : 300},\"sig\" : [{ \"kind\" : \"require\",\"type\" : \"PrometheusInterface\" },{ \"kind\" : \"require\",\"type\" : \"DBInterface\" }],\"methods\" : []}]}"]
 class MessageAnalyser(PrometheusInterface prometheus,DBInterface db) implements MessageAnalyserInterface {
   Int cores = 1;
 
-  Metric completed;
-  Metric latency;
-  {
-    completed = new local DiscreteMetric(Pair("comp",global_service_name()));
-    latency = new local DiscreteMetric(Pair("latency",global_service_name()));
-    prometheus!register(list[completed,latency]);
-  }
-
-  Unit insertResult(String res, String id, MessageAnalyser_LoadBalancerInterface balancer){
-		[Cost: speed_per_core() * time_unit_to_sec() * cores / nth(serviceMCLs(),7)] skip;
+  Unit insertResult(String id,Rat received_at, MessageAnalyser_LoadBalancerInterface balancer){
+    [Cost: speed_per_core() * time_unit_to_sec() * cores / nth(serviceMCLs(),7)] skip;
+    Rat stop = timeValue(now());
     balancer!removeMessage();
-		Int numberOfActivityWaiting = await db!insertResult(res, id);
-    if(numberOfActivityWaiting == 0){
-      MessageResultInterface msg = await db!returnMessageResults(id);
-      Rat start = await msg!receptionTime();
-      Rat stop = timeValue(now());
-      completed!push(1);
-      latency!push(stop - start);
-    }
+    db!insertResult(id,stop - received_at);
+    
   }
 }

@@ -4,6 +4,7 @@ import * from ABS.DC;
 import * from Architecture;
 import * from DB;
 import * from Prometheus;
+import * from DB;
 
 
 interface VirusScannerPlan{
@@ -13,7 +14,7 @@ interface VirusScannerPlan{
 	Unit undeploy();
 }
 
-class VirusScannerPlan(CloudProvider cloudProvider, PrometheusInterface prometheus, VirusScanner_LoadBalancerInterface virusScanner_LoadBalancerObj, MessageAnalyser_LoadBalancerInterface messageAnalyser_LoadBalancerObj, AttachmentsManager_LoadBalancerInterface attachmentsManager_LoadBalancerObj) implements VirusScannerPlan{
+class VirusScannerPlan(CloudProvider cloudProvider, PrometheusInterface prometheus, VirusScanner_LoadBalancerInterface virusScanner_LoadBalancerObj, MessageAnalyser_LoadBalancerInterface messageAnalyser_LoadBalancerObj, AttachmentsManager_LoadBalancerInterface attachmentsManager_LoadBalancerObj, DBInterface db) implements VirusScannerPlan{
 
 	List<List<VirusScannerInterface>> ls_ls_VirusScannerInterface = Nil;
 	List<VirusScannerInterface> ls_VirusScannerInterface = Nil;
@@ -82,7 +83,7 @@ class VirusScannerPlan(CloudProvider cloudProvider, PrometheusInterface promethe
 		DeploymentComponent c4_xlarge_0 = cloudProvider.launchInstanceNamed("c4_xlarge");
 		ls_DeploymentComponent = Cons(c4_xlarge_0,ls_DeploymentComponent);
 		speedPatchMap = put(speedPatchMap,c4_xlarge_0,0);
-		[DC: c4_xlarge_0] VirusScannerInterface odefault___VirusScanner_0_c4_xlarge_0 = new VirusScanner(prometheus,attachmentsManager_LoadBalancerObj, messageAnalyser_LoadBalancerObj);
+		[DC: c4_xlarge_0] VirusScannerInterface odefault___VirusScanner_0_c4_xlarge_0 = new VirusScanner(prometheus,attachmentsManager_LoadBalancerObj, messageAnalyser_LoadBalancerObj, db);
 		Rat coreRequired_odefault___VirusScanner_0_c4_xlarge_0 = 4;
 		speedPatchMap = put(speedPatchMap, c4_xlarge_0, fromJust(lookup(speedPatchMap,c4_xlarge_0)) + coreRequired_odefault___VirusScanner_0_c4_xlarge_0);
 		ls_VirusScannerInterface = Cons(odefault___VirusScanner_0_c4_xlarge_0, ls_VirusScannerInterface);

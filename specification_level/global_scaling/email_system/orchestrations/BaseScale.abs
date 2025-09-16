@@ -247,7 +247,7 @@ class BaseScale(CloudProvider cloudProvider, PrometheusInterface prometheus, Mes
 		speedPatchMap = put(speedPatchMap, c4_xlarge_0, fromJust(lookup(speedPatchMap,c4_xlarge_0)) + coreRequired_odefault___MessageParser_0_c4_xlarge_0);
 		ls_MessageParserInterface = Cons(odefault___MessageParser_0_c4_xlarge_0, ls_MessageParserInterface);
 		this!patchSpeed(speedPatchMap);
-		await duration(waiting_time,waiting_time);
+		//await duration(waiting_time,waiting_time);
 		messageAnalyser_LoadBalancerObj.connectInstance(odefault___MessageAnalyser_0_c4_xlarge_0);
 		linkAnalyser_LoadBalancerObj.connectInstance(odefault___LinkAnalyser_0_c4_large_1);
 		textAnalyser_LoadBalancerObj.connectInstance(odefault___TextAnalyser_0_c4_large_2);

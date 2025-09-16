@@ -28,8 +28,8 @@ class Simulation() implements ISimulation {
      Unit start() {
 
           CloudProvider cp = new CloudProvider("CloudProvider");
-          DBInterface db = new DB();
           PrometheusInterface prometheus = new Prometheus();
+          DBInterface db = new DB(prometheus);
           InvariantsDeployer c1 = new InvariantsDeployer(cp,prometheus,db);
           await c1!deploy();
 

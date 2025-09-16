@@ -212,7 +212,7 @@ class Setup(CloudProvider cloudProvider, PrometheusInterface prometheus) impleme
 		speedPatchMap = put(speedPatchMap, c4_4xlarge_0, fromJust(lookup(speedPatchMap,c4_4xlarge_0)) + coreRequired_odefault___Auth_0_c4_4xlarge_0);
 		ls_AuthInterface = Cons(odefault___Auth_0_c4_4xlarge_0, ls_AuthInterface);
 		this!patchSpeed(speedPatchMap);
-		await duration(waiting_time,waiting_time);
+		//await duration(waiting_time,waiting_time);
 		odefault___AuthLoadBalancer_0_c4_large_1.connectInstance(odefault___Auth_0_c4_4xlarge_0);
 		odefault___ImageLoadBalancer_0_c4_large_0.connectInstance(odefault___Image_0_c4_4xlarge_0);
 		odefault___ImageLoadBalancer_0_c4_large_0.connectInstance(odefault___Image_1_c4_4xlarge_0);

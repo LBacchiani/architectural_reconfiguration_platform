@@ -13,7 +13,7 @@ interface ImageAnalyserPlan{
 	Unit undeploy();
 }
 
-class ImageAnalyserPlan(CloudProvider cloudProvider, PrometheusInterface prometheus, ImageAnalyser_LoadBalancerInterface imageAnalyser_LoadBalancerObj, MessageAnalyser_LoadBalancerInterface messageAnalyser_LoadBalancerObj) implements ImageAnalyserPlan{
+class ImageAnalyserPlan(CloudProvider cloudProvider, PrometheusInterface prometheus, ImageAnalyser_LoadBalancerInterface imageAnalyser_LoadBalancerObj, MessageAnalyser_LoadBalancerInterface messageAnalyser_LoadBalancerObj, DBInterface dbObj) implements ImageAnalyserPlan{
 
 	List<List<ImageAnalyserInterface>> ls_ls_ImageAnalyserInterface = Nil;
 	List<ImageAnalyserInterface> ls_ImageAnalyserInterface = Nil;
@@ -74,7 +74,7 @@ class ImageAnalyserPlan(CloudProvider cloudProvider, PrometheusInterface prometh
 		DeploymentComponent c4_large_0 = cloudProvider.launchInstanceNamed("c4_large");
 		ls_DeploymentComponent = Cons(c4_large_0,ls_DeploymentComponent);
 		speedPatchMap = put(speedPatchMap,c4_large_0,0);
-		[DC: c4_large_0] ImageAnalyserInterface odefault___ImageAnalyser_0_c4_large_0 = new ImageAnalyser(prometheus, messageAnalyser_LoadBalancerObj);
+		[DC: c4_large_0] ImageAnalyserInterface odefault___ImageAnalyser_0_c4_large_0 = new ImageAnalyser(prometheus, messageAnalyser_LoadBalancerObj, dbObj);
 		Rat coreRequired_odefault___ImageAnalyser_0_c4_large_0 = 1;
 		speedPatchMap = put(speedPatchMap, c4_large_0, fromJust(lookup(speedPatchMap,c4_large_0)) + coreRequired_odefault___ImageAnalyser_0_c4_large_0);
 		ls_ImageAnalyserInterface = Cons(odefault___ImageAnalyser_0_c4_large_0, ls_ImageAnalyserInterface);

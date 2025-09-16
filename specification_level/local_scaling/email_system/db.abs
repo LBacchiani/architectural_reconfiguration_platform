@@ -2,52 +2,53 @@ module DB;
 
 export *;
 
-import * from MsgRes;
+import * from Prometheus;
+import * from Param;
 
 interface DBInterface {
   Unit insertMessageInformation (String messageId, Int attachmentsNumber);
-  Int insertResult(String res, String id);
-  MessageResultInterface returnMessageResults(String messageId);
-  Bool removeMessage(String messageId);
+  Int insertResult(String messageId, Rat received_at);
+  Unit removeMessage(String messageId);
 }
 
-class DB() implements DBInterface {
-  Map<String,Pair<MessageResultInterface,Rat>> messageInfo = map[];
+class DB(PrometheusInterface prometheus) implements DBInterface {
+  Map<String,Int> messageInfo = map[];
+  Metric loss;
+  Metric completed;
+  Metric latency;
+  {
+    completed = new local DiscreteMetric(Pair("comp",global_service_name()));
+    latency = new local DiscreteMetric(Pair("latency",global_service_name()));
+    loss = new local DiscreteMetric(Pair("rej",global_service_name()));
+    prometheus!register(list[loss,completed,latency]);
+  }
 
-  Bool removeMessage(String messageId) {
-    Bool removed = False;
+
+  Unit removeMessage(String messageId) {
     if(isJust(lookup(messageInfo,messageId))) {
       messageInfo = removeKey(messageInfo, messageId);
-      removed = True;
+      loss!push(1);
     }
-    return removed;
   }
 
   Unit insertMessageInformation (String messageId, Int attachmentsNumber){
-    MessageResultInterface newResults = new MessageResult(3+attachmentsNumber, timeValue(now()));
-		messageInfo = insert(messageInfo,Pair(messageId,Pair(newResults,timeValue(now()))));
+		messageInfo = put(messageInfo, messageId, attachmentsNumber);
   }
 
-  Int insertResult(String res, String id){
+  Int insertResult(String messageId, Rat lat){
     Int numberOfActivityWaiting = -1;
-    Maybe<Pair<MessageResultInterface,Rat>> maybe = lookup(messageInfo, id);
+    Maybe<Int> maybe = lookup(messageInfo, messageId);
     if(isJust(maybe)){
-      MessageResultInterface actualResults = fst(fromJust(maybe));
-      Rat analysisTime = snd(fromJust(maybe));
-      actualResults.insertRes(res);
-      numberOfActivityWaiting = actualResults.getActivityWaiting();
+      numberOfActivityWaiting = fromJust(maybe) - 1;
+      if (numberOfActivityWaiting == 0) {
+        completed!push(1);
+        latency!push(lat);
+        messageInfo = removeKey(messageInfo, messageId);
+      }
+      else {
+		    messageInfo = put(messageInfo, messageId, numberOfActivityWaiting);
+      }
     }
     return numberOfActivityWaiting;
   }
-
-  MessageResultInterface returnMessageResults(String messageId){
-    MessageResultInterface messageResults = null;
-    Maybe<Pair<MessageResultInterface,Rat>> maybe = lookup(messageInfo, messageId);
-    if(isJust(maybe)){
-      messageResults = fst(fromJust(maybe));
-      messageInfo = removeKey(messageInfo, messageId);
-    }
-    return messageResults;
-  }
-
 }

@@ -7,7 +7,7 @@ def Rat monitoring_window() = 20;  //second
 def Rat sendingWin() = 1;
 def Rat cycles() = length(workload()) / monitoring_window();
 
-def Int buffer_size() = 600;
+def Int buffer_size() = 370;
 def String global_service_name() = "system";
 def List<String> services() = list["WebUI", "Persistence", "Auth", "Recommender", "Image"];
 def List<Rat> serviceMCLs() = list[150,905,190,5000,600];
@@ -25,7 +25,7 @@ def Rat recommenderMem() = 512; //MB
 def Rat imageCores() = 1100; //mCores
 def Rat imageMem() = 512; //MB
 
-def Rat speed_per_core() = 5;
+def Rat speed_per_core() = 47/10;
 def Int kbig() = 10;
 def Int k() = 8;
 
@@ -48,8 +48,8 @@ def List<Int> workload() = list[
     500, 500, 500, 500, 500, 500, 500, 500, 500, 500,
     500, 500, 500, 500, 500, 500, 500, 500, 500, 500,
     500, 500, 500, 500, 500, 500, 500, 500, 500, 500,
-    500, 500, 500, 500, 500, 500, 500, 500, 500, 500,
-    500, 483, 466, 450, 433, 416, 400, 383, 366, 350,
+    500, 500, 500, 500, 500, 500, 220, 280, 250, 300,
+    300, 283, 266, 250, 233, 416, 200, 383, 166, 150,
     333, 316, 300, 283, 266, 250, 233, 216, 200, 183,
     166, 150, 133, 116, 100, 83, 66, 50, 33, 16
 ];

@@ -40,7 +40,7 @@ class GS_Scaler(List<WrapperScaleInterface> orchestrations, PrometheusInterface 
         Rat target = measured;
         if (proactiveness()) {
             Int index = time % length(predicted_workload());
-            Rat predicted = foldl((Rat e, Rat acc) => e + acc)(nth(predicted_workload(), index),0);
+            Rat predicted = this.sum(nth(predicted_workload(), index));//foldr((Rat e, Rat acc) => e + acc)(nth(predicted_workload(), index),0);
             predicted = predicted / monitoring_window();
             target = predicted;
             if (mixing()) {
@@ -55,7 +55,7 @@ class GS_Scaler(List<WrapperScaleInterface> orchestrations, PrometheusInterface 
         Rat mcl = this.mcl(curr_config);
         instMetric!push(instances);
         mclMetric!push(mcl);
-        this.scale(configDeltas);
+        this!scale(configDeltas);
     }
 
     Unit scale(List<Int> configDeltas) {
@@ -74,6 +74,8 @@ class GS_Scaler(List<WrapperScaleInterface> orchestrations, PrometheusInterface 
         }
         deployedDeltas = configDeltas;
   }
+
+
 
 
     List<Int> computeConfiguration(Rat target_workload) {
@@ -143,5 +145,11 @@ class GS_Scaler(List<WrapperScaleInterface> orchestrations, PrometheusInterface 
             i = i + 1;
         }
         return vals;
+    }
+
+    Rat sum(List<Rat> ls) {
+        Rat res = 0;
+        foreach (v in ls) res = res + v;
+        return res;
     }
 }

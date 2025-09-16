@@ -33,13 +33,11 @@ class Algorithm(Map<String,WrapperScaleInterface> wrappers, PrometheusInterface 
             curr_config = appendright(curr_config,required_instances);
             i = i + 1;
         }
-        // println(toString(curr_config));
         Rat mcl = this.mcl(curr_config);
-        mclMetric!push(mcl);
         Rat inst = this.instances(curr_config);
         instMetric!push(inst);
-        this.scale(curr_config);
-        config = curr_config;
+        mclMetric!push(mcl);
+        this!scale(curr_config);
     }
 
 
@@ -51,7 +49,7 @@ class Algorithm(Map<String,WrapperScaleInterface> wrappers, PrometheusInterface 
         Int currInst = nth(config,i);
         Int target = minInst;
         Rat curr = lookupDefault(metrics,"tot"+service,0) / monitoring_window();
-        if (curr - (mcl * currInst - kbig())  > k() || (mcl * currInst - kbig()) - curr > k()) target = ceil(float((curr + kbig() * mf)/ mcl));
+        if (curr - (mcl * currInst - kbig() * mf)  > k() * mf || (mcl * currInst - kbig() * mf) - curr > k() * mf) target = ceil(float((curr + kbig() * mf)/ mcl));
         return when target >= minInst then target else minInst;
     }
 
@@ -59,24 +57,25 @@ class Algorithm(Map<String,WrapperScaleInterface> wrappers, PrometheusInterface 
         Int i = 0;
         while (i < length(required_instances)) {
             Int currInst = nth(config, i);
+            Int required = nth(required_instances, i);
             Int direction = nth(required_instances,i) - currInst; 
             WrapperScaleInterface orch = lookupUnsafe(wrappers,nth(services(),i));
             Int minInst = nth(base_config(),i);    
             if (direction < 0) {
-                direction = abs(direction);
-                while (direction > minInst) {
+                while (currInst > required && currInst > minInst) {
                     orch!undeploy();
-                    direction = direction - 1;
+                    currInst = currInst - 1;
                 }
             } else {
-                direction = abs(direction);
-                while (direction > 0) {
+                while (currInst < required) {
                     orch!deploy();
-                    direction = direction - 1;
+                    currInst = currInst + 1;
                 }
             }
             i = i + 1;
         }
+        config = required_instances;
+
     }
 
 

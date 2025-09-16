@@ -9,7 +9,7 @@ def Rat sendingWin() = 1;
 def Rat cycles() = length(workload()) / monitoring_window();
 
 
-def Int buffer_size() = 500;
+def Int buffer_size() = 700;
 def String global_service_name() = "system";
 def List<String> services() = list["Parser", "Header", "Link", "Text", "VirusScanner", "AttachmentsManager", "ImageAnalyser", "MessageAnalyser"];
 def List<Rat> serviceMCLs() = list[110,1000000000,1000000000,1000000000,120,231,231,300];

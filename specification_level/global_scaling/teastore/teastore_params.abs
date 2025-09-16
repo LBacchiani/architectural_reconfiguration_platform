@@ -7,7 +7,7 @@ def Rat monitoring_window() = 20;  //second
 def Rat sendingWin() = 1;
 def Rat cycles() = length(workload()) / monitoring_window();
 
-def Int buffer_size() = 600;
+def Int buffer_size() = 1000;
 def String global_service_name() = "system";
 def List<String> services() = list["WebUI", "Persistence", "Auth", "Recommender", "Image"];
 def List<Rat> serviceMCLs() = list[150,905,190,5000,600];

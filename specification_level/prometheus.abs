@@ -15,10 +15,34 @@ interface Metric {
 }
 
 class DiscreteMetric(Pair<String,String> id) implements Metric {
+    Rat acc = 0;
     Rat value = 0;
+    Int curr_window = truncate(timeValue(now()) / monitoring_window()); 
     [Atomic] Pair<String,String> id() {return id;}
-    Rat value() { return value; }
-    [Atomic] Unit push(Rat val)  { value = value + val; }
+   Rat value() {
+        return value;
+    }
+    [Atomic] Unit push(Rat val)  { 
+        value = value + val; 
+    }  
+//    Rat value() {
+//         Int window = truncate(timeValue(now()) / monitoring_window());
+//         if (curr_window != window) {
+//             value = acc;  
+//             acc = 0;
+//             curr_window = window;
+//         }
+//         return value;
+//     }
+    // [Atomic] Unit push(Rat val)  { 
+    //     Int window = truncate(timeValue(now()) / monitoring_window()); 
+    //     if (curr_window != window) {
+    //         curr_window = window;
+    //         value = acc;
+    //         acc = 0;
+    //     }
+    //     acc = acc + val; 
+    // }
     Unit flush() {value = 0;}
 }
 
@@ -36,8 +60,8 @@ class InstantMetric(Pair<String,String> id) implements Metric {
 interface PrometheusInterface {
     [Atomic] Unit register(List<Metric> ms);
     Rat getV(String metric, String key);
-    Unit flush();
     Map<String,Rat> getAllV();
+    Unit flush();
 }
 
 
@@ -83,8 +107,8 @@ class Prometheus() implements PrometheusInterface {
     }
 
     Unit flush() {
-        foreach (ms in values(metrics)) {
-            foreach(m in ms) m!flush();
+            foreach (ms in values(metrics)) {
+                foreach(m in ms) m!flush();
         }
     }
 }

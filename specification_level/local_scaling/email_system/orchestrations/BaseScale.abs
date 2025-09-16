@@ -226,7 +226,7 @@ class BaseScale(CloudProvider cloudProvider, PrometheusInterface prometheus, Mes
 		Rat coreRequired_odefault___HeaderAnalyser_0_c4_large_0 = 2;
 		speedPatchMap = put(speedPatchMap, c4_large_0, fromJust(lookup(speedPatchMap,c4_large_0)) + coreRequired_odefault___HeaderAnalyser_0_c4_large_0);
 		ls_HeaderAnalyserInterface = Cons(odefault___HeaderAnalyser_0_c4_large_0, ls_HeaderAnalyserInterface);
-		[DC: c4_xlarge_0] ImageAnalyserInterface odefault___ImageAnalyser_0_c4_xlarge_0 = new ImageAnalyser(prometheus, messageAnalyser_LoadBalancerObj);
+		[DC: c4_xlarge_0] ImageAnalyserInterface odefault___ImageAnalyser_0_c4_xlarge_0 = new ImageAnalyser(prometheus, messageAnalyser_LoadBalancerObj, dbObj);
 		Rat coreRequired_odefault___ImageAnalyser_0_c4_xlarge_0 = 1;
 		speedPatchMap = put(speedPatchMap, c4_xlarge_0, fromJust(lookup(speedPatchMap,c4_xlarge_0)) + coreRequired_odefault___ImageAnalyser_0_c4_xlarge_0);
 		ls_ImageAnalyserInterface = Cons(odefault___ImageAnalyser_0_c4_xlarge_0, ls_ImageAnalyserInterface);
@@ -234,11 +234,11 @@ class BaseScale(CloudProvider cloudProvider, PrometheusInterface prometheus, Mes
 		Rat coreRequired_odefault___TextAnalyser_0_c4_large_2 = 2;
 		speedPatchMap = put(speedPatchMap, c4_large_2, fromJust(lookup(speedPatchMap,c4_large_2)) + coreRequired_odefault___TextAnalyser_0_c4_large_2);
 		ls_TextAnalyserInterface = Cons(odefault___TextAnalyser_0_c4_large_2, ls_TextAnalyserInterface);
-		[DC: c4_xlarge_0] AttachmentsManagerInterface odefault___AttachmentsManager_0_c4_xlarge_0 = new AttachmentsManager(prometheus, imageAnalyser_LoadBalancerObj);
+		[DC: c4_xlarge_0] AttachmentsManagerInterface odefault___AttachmentsManager_0_c4_xlarge_0 = new AttachmentsManager(prometheus, imageAnalyser_LoadBalancerObj, dbObj);
 		Rat coreRequired_odefault___AttachmentsManager_0_c4_xlarge_0 = 1;
 		speedPatchMap = put(speedPatchMap, c4_xlarge_0, fromJust(lookup(speedPatchMap,c4_xlarge_0)) + coreRequired_odefault___AttachmentsManager_0_c4_xlarge_0);
 		ls_AttachmentsManagerInterface = Cons(odefault___AttachmentsManager_0_c4_xlarge_0, ls_AttachmentsManagerInterface);
-		[DC: c4_xlarge_1] VirusScannerInterface odefault___VirusScanner_0_c4_xlarge_1 = new VirusScanner(prometheus, attachmentsManager_LoadBalancerObj, messageAnalyser_LoadBalancerObj);
+		[DC: c4_xlarge_1] VirusScannerInterface odefault___VirusScanner_0_c4_xlarge_1 = new VirusScanner(prometheus, attachmentsManager_LoadBalancerObj, messageAnalyser_LoadBalancerObj, dbObj);
 		Rat coreRequired_odefault___VirusScanner_0_c4_xlarge_1 = 4;
 		speedPatchMap = put(speedPatchMap, c4_xlarge_1, fromJust(lookup(speedPatchMap,c4_xlarge_1)) + coreRequired_odefault___VirusScanner_0_c4_xlarge_1);
 		ls_VirusScannerInterface = Cons(odefault___VirusScanner_0_c4_xlarge_1, ls_VirusScannerInterface);
@@ -247,7 +247,7 @@ class BaseScale(CloudProvider cloudProvider, PrometheusInterface prometheus, Mes
 		speedPatchMap = put(speedPatchMap, c4_xlarge_0, fromJust(lookup(speedPatchMap,c4_xlarge_0)) + coreRequired_odefault___MessageParser_0_c4_xlarge_0);
 		ls_MessageParserInterface = Cons(odefault___MessageParser_0_c4_xlarge_0, ls_MessageParserInterface);
 		this!patchSpeed(speedPatchMap);
-		await duration(waiting_time,waiting_time);
+		//await duration(waiting_time,waiting_time);
 		messageAnalyser_LoadBalancerObj.connectInstance(odefault___MessageAnalyser_0_c4_xlarge_0);
 		linkAnalyser_LoadBalancerObj.connectInstance(odefault___LinkAnalyser_0_c4_large_1);
 		textAnalyser_LoadBalancerObj.connectInstance(odefault___TextAnalyser_0_c4_large_2);
