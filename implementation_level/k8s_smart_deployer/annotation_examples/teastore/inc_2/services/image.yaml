@@ -14,11 +14,17 @@ spec:
           memory: "10M"
       env:
         - name: MCL
-          value: "190"
+          value: "600"
         - name: SERVICE_NAME
           value: "image"
+        - name: MAX_SIZE
+          value: "1000"
         - name: PORT
-          value: "8002"
+          value: "80"
         - name: OUTPUT_SERVICES
-          value: '{"http://persistence-service:8003/request":"1"}'
+          value: '{}'
+        - name: MAX_CONNECTIONS
+          value: "70"
+        - name: PIPELINE_COUNT
+          value: "1"
   restartPolicy: Always

@@ -31,15 +31,26 @@ spec:
 
 ports:
   strong:
+  
     - type: "virus-scanner-service-type"
-      id: PORT_VIRUS_SCANNER_SERVICE
-      value: 1
+      config:
+        envName: PORT_VIRUS_SCANNER_SERVICE
+        containers :
+          - name : "parser"
     - type: "header-analyzer-service-type"
-      id: PORT_HEADER_ANALYZER_SERVICE
-      value: 1
+      config:
+        envName: PORT_HEADER_ANALYZER_SERVICE
+        containers :
+          - name : "parser"
+    
     - type: "text-analyzer-service-type"
-      id: PORT_TEXT_ANALYZER_SERVICE
-      value: 1
+      config:
+        envName: PORT_TEXT_ANALYZER_SERVICE
+        containers :
+          - name : "parser"
+  
     - type: "link-analyzer-service-type"
-      id: PORT_LINK_ANALYZER_SERVICE
-      value: 1
+      config:
+        envName: PORT_LINK_ANALYZER_SERVICE
+        containers :
+          - name : "parser"

@@ -31,7 +31,7 @@ class Guard:
         self.mixer = mixer
 
         prometheus_service_address = os.environ.get("PROMETHEUS_SERVICE_ADDRESS", "localhost")
-        prometheus_service_port = os.environ.get("PROMETHEUS_SERVICE_PORT", "55387")
+        prometheus_service_port = os.environ.get("PROMETHEUS_SERVICE_PORT", "59001")
 
         self.monitor_only = os.environ.get("MONITOR_ONLY", "false").lower() == 'true'
         prometheus_url = f"http://{prometheus_service_address}:{prometheus_service_port}"
@@ -42,10 +42,10 @@ class Guard:
         self.predictions = predictions
         
         # Metrics names from environment variables
-        self.http_requests_metric = os.environ.get("HTTP_REQUESTS_METRIC", "http_requests_total_webUI_counter")
-        self.behaviour_execution_metric = os.environ.get("BEHAVIOUR_EXECUTION_METRIC", "behaviour_execution")
-        self.behaviour_time_metric = os.environ.get("BEHAVIOUR_TIME_METRIC", "behaviour_time_execution")
-        self.message_lost_metric = os.environ.get("MESSAGE_LOST_METRIC", "message_lost_webUI")
+        self.http_requests_metric = os.environ.get("HTTP_REQUESTS_METRIC", "http_requests_total_parser_counter")
+        self.behaviour_execution_metric = os.environ.get("BEHAVIOUR_EXECUTION_METRIC", "http_requests_total_global")
+        self.behaviour_time_metric = os.environ.get("BEHAVIOUR_TIME_METRIC", "http_requests_total_time")
+        self.message_lost_metric = os.environ.get("MESSAGE_LOST_METRIC", "message_lost_global_counter")
 
         self.logger = GuardLogger.from_env()
 

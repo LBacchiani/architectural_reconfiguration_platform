@@ -88,7 +88,7 @@ export const options = {
   },
 };
 
-const BASE_URL = 'https://example.com/api/resource';
+const BASE_URL = 'http://localhost:59230/request';
 
 export default function () {
   const res = http.post(BASE_URL, {}, {

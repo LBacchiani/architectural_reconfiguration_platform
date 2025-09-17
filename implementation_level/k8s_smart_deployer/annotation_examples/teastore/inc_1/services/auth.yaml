@@ -18,10 +18,14 @@ spec:
         - name: SERVICE_NAME
           value: "auth"
         - name: PORT
-          value: "8002"
-        - name: PORT_PERSISTENCE_SERVICE
-          type: "persistence-service-type"
+          value: "80"
+        - name: MAX_SIZE
+          value: "1000"
         - name: OUTPUT_SERVICES
-          value: '{"http://persistence-service:8003/request":"1"}'
+          value: '{"http://persistence-service/request":"1"}'
+        - name: MAX_CONNECTIONS
+          value: "70"
+        - name: PIPELINE_COUNT
+          value: "1"
           
   restartPolicy: Always

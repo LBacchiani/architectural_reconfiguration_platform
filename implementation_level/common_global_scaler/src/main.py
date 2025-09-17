@@ -44,14 +44,14 @@ if __name__ == '__main__':
     base = np.fromstring(os.environ.get("SYSTEM_BASE_CONFIGURATION", ""), sep=",", dtype=int) 
 
     # Microservices MCL and MF
-    microservices_mcl = np.fromstring(os.environ.get("MICROSERVICES_MCL", ""), sep=",", dtype=int)
-    microservices_mf =  np.fromstring(os.environ.get("MICROSERVICES_MF", ""), sep=",", dtype=int)
+    microservices_mcl = np.fromstring(os.environ.get("MICROSERVICES_MCL", ""), sep=",", dtype=float)
+    microservices_mf =  np.fromstring(os.environ.get("MICROSERVICES_MF", ""), sep=",", dtype=float)
 
     # Replicas for each increment
     scale_config = read_scale_config()
 
     # Folder path where the increments are stored
-    folder_path = os.environ.get("FOLDER_PATH", "../manifests_ts")
+    folder_path = os.environ.get("FOLDER_PATH", "../manifests_mp")
     check_manifest_folder(folder_path)
 
     #standard predictions

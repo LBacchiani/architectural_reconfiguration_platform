@@ -49,7 +49,7 @@ spec:
               value: "1,4,1,3,6"
             - name: INCREMENT_1
               value: "2,1,1,0,2"
-            - name: INCREMENT_2
+            - name: INCREMENT_2e
               value: "1,1,1,0,2"
             - name: PULUMI_ACCESS_TOKEN
               valueFrom:

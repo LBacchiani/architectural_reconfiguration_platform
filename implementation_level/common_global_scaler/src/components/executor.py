@@ -37,25 +37,19 @@ def execute_yaml(file_path: str, stack_name:str, operation: str, project_path: s
         shutil.copy(converted_file_path, destination)
 
         substitute_env_types_in_yaml(destination, mapping)
-
         command = "up" if operation == Op.DEPLOY.value else "destroy"
-
-        out_select_stack = subprocess.run(
+        subprocess.run(
             ["pulumi", "stack", "select", "--non-interactive", "-c", stack_name],
             cwd=converted_project_path,
+            capture_output=False,
             check=True
         )
-
-        print(out_select_stack)
-
-        out_up_command = subprocess.run(
+        subprocess.run(
             ["pulumi", command, "-f", "-y", "--non-interactive", "--stack", stack_name],
             cwd=converted_project_path,
-            capture_output=True,
+            capture_output=False,
             text=True,
         )
-
-        print(out_up_command.stdout)
 
     except subprocess.CalledProcessError as e:
         print(f"Pulumi command failed: {e}")
@@ -105,7 +99,6 @@ def map_services_by_type(in_cluster: bool = False) -> Dict[str, List[str]]:
     for svc in services:
         name = svc.metadata.name
         labels = svc.metadata.labels or {}
-        print(name, labels)
         svc_type = labels.get("type")
         if not svc_type:
             continue

@@ -14,9 +14,13 @@ spec:
           memory: "10M"
       env:
         - name: MCL
-          value: "190"
+          value: "5000"
         - name: SERVICE_NAME
           value: "recommender"
         - name: PORT
-          value: "8005"
+          value: "80"
+        - name: MAX_SIZE
+          value: "1000"
+        - name: OUTPUT_SERVICES
+          value: '{}'
   restartPolicy: Always
