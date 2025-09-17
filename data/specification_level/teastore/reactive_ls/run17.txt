@@ -7,5 +7,5 @@
 120 64.79299112888 measured: 499.95 tot: 9996.0 comp: 10368.0 rej: 0.0 supp: 500.0 inst: 16.0
 140 0.014102 measured: 499.95 tot: 10000.0 comp: 10000.0 rej: 0.0 supp: 570.0 inst: 17.0
 160 0.0195 measured: 500.0 tot: 9999.0 comp: 10000.0 rej: 0.0 supp: 570.0 inst: 17.0
-180 0.013355991822 measured: 317.35 tot: 6349.0 comp: 6349.0 rej: 0.0 supp: 570.0 inst: 17.0
+180 0.013355991822 measured: 317.35 tot: 6349.0 comp: 6349.0 rej: 0.0 supp: 570.0 inst: 14.0
 200 0.039811991882 measured: 142.15 tot: 2842.0 comp: 2842.0 rej: 0.0 supp: 380.0 inst: 12.0
