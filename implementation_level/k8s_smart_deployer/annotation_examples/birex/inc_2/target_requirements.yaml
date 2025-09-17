@@ -1,12 +1,10 @@
-service_instances:
+instances:
   - type: "birex-data-processor-type"
     replicas: 1
 
 existingResources:
   - type: "prometheus-service-type"
-    value: 1
   - type: "birex-collector-service-type"
-    value: 1
   
 placement:
   - type: "birex-data-processor-type"

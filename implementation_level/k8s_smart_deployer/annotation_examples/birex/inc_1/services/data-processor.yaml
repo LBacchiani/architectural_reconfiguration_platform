@@ -19,9 +19,13 @@ spec:
 ports:
   strong:
     - type: "birex-collector-service-type"
-      id: PORT_BIREX_COLLECTOR_SERVICE
-      value: 1
+      config:
+        envName: PORT_BIREX_COLLECTOR_SERVICE
+        containers :
+          - name : "birex-processor"
     - type: "prometheus-service-type"
-      id: PORT_PROMETHEUS_SERVICE
-      value: 1
+      config:
+        envName: PORT_PROMETHEUS_SERVICE
+        containers:
+          - name: "birex-processor"
 
