@@ -15,7 +15,7 @@ if __name__ == '__main__':
     target_decl = args[1]
     vms_decl = args[2]
     port = args[3]
-    language = args[4]
+    optimal = args[4] == '--optimal' if len(args) == 5 else False
     target_folder = './deployment'
 
     components = []
@@ -103,9 +103,10 @@ if __name__ == '__main__':
             else:
                 c['ports'] = {'strong': deleted_deps[comp_type]}
 
-    if language == 'python':
-        generate_python_script(order, components, target_folder)
-    elif language == 'yaml':
-        generate_yaml_definition(order, components, target_folder)
-    else:
-        print(f"Unsupported output format: {language}")
+    # if language == 'python':
+    #     generate_python_script(order, components, target_folder)
+    # elif language == 'yaml':
+    #     generate_yaml_definition(order, components, target_folder)
+    # else:
+    #     print(f"Unsupported output format: {language}")
+    generate_yaml_definition(order, components, target_folder, target_requirements['instances'], optimal)

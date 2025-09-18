@@ -11,7 +11,7 @@ instances:
   - type: "virus-scanner-type"
     replicas: 2
     
-existingDependencies:
+existingResources:
   - type: "virus-scanner-service-type"
   - type: "message-analyzer-service-type"
   - type: "attachment-manager-service-type"

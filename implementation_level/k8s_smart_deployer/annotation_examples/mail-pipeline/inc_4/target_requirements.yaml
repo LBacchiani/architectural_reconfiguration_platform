@@ -14,7 +14,7 @@ instances:
   - type: "parser-type"
     replicas: 1
     
-existingDependencies:
+existingResources:
   - type: "virus-scanner-service-type"
   - type: "message-analyzer-service-type"
   - type: "attachment-manager-service-type"

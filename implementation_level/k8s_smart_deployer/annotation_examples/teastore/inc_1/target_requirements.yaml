@@ -11,7 +11,7 @@ instances:
   - type: "image-type"
     replicas: 2
 
-existingDependencies:
+existingResources:
   - type: "auth-service-type"
   - type: "image-service-type"
   - type: "persistence-service-type"

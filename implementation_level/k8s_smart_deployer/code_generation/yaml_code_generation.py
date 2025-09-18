@@ -3,23 +3,29 @@ import uuid
 import yaml
 from code_generation.utilities import to_dns_name
 
+
 class NoAliasDumper(yaml.SafeDumper):
     def ignore_aliases(self, data):
         return True
 
+
 def enumerate_service_groups(input_list):
-    service_groups = {}
+    seen = set()
     result = []
+
     for host, service in input_list:
-        if service not in service_groups:
-            service_groups[service] = 0
-        result.append((host, service_groups[service], service))
-        service_groups[service] += 1
+        if service not in seen:
+            # Only add the first occurrence of each service
+            result.append((host, 0, service))  # 0 as placeholder for index
+            seen.add(service)
+
     return result
 
 
-def add_pod_definitions(order, components):
+
+def add_pod_definitions(order, components, instances, optimal):
     component_mapping = {comp['type']: comp for comp in components}
+    replicas_mapping = {inst["type"]: inst["replicas"] for inst in instances}
     pod_definitions = []
     name_to_variable = {}
     indexed_services = enumerate_service_groups(order)
@@ -40,7 +46,7 @@ def add_pod_definitions(order, components):
 
         kind = component.get("kind")
         mapped_dependencies = {}
-        
+
         ports_required = component.get('ports', {}).get('strong', [])
         for entry in ports_required:
             dep_name = entry.get("id")
@@ -54,7 +60,7 @@ def add_pod_definitions(order, components):
             component['metadata']['labels']['type'] = component['type']
         else:
             component['metadata'] = {'labels': {'type': component['type']}}
-    
+
         depends_on = []
         if kind == 'Pod':
             containers = component['spec']['containers']
@@ -62,7 +68,7 @@ def add_pod_definitions(order, components):
                 env_list = container.get("env", [])
                 for dep_name, dep_info in mapped_dependencies.items():
                     dep_type = dep_info[0]
-                    dep_count =  dep_info[1]
+                    dep_count = dep_info[1]
                     dep_config = dep_info[2]
 
                     container_names = [c['name'] for c in dep_config.get('containers', []) if 'name' in c]
@@ -74,7 +80,13 @@ def add_pod_definitions(order, components):
                         else:
                             env_list.append({"name": dep_name, "type": dep_type})
 
-            props = create_pod_definition(variable_name, component, node_name)
+            replicas = replicas_mapping.get(component['type'], 1)
+            props = create_deployment_definition(
+                variable_name,
+                component,
+                node_name if optimal else None,
+                replicas
+            )
 
         elif kind == 'Service':
             props = create_service_definition(variable_name, component)
@@ -85,7 +97,7 @@ def add_pod_definitions(order, components):
 
         pod_definitions.append({
             'name': variable_name,
-            'type': 'kubernetes:core/v1:Pod' if kind == 'Pod' else 'kubernetes:core/v1:Service',
+            'type': 'kubernetes:apps/v1:Deployment' if kind == 'Pod' else 'kubernetes:core/v1:Service',
             'properties': props,
             'options': {"dependsOn": depends_on} if depends_on else {}
         })
@@ -93,31 +105,49 @@ def add_pod_definitions(order, components):
     return pod_definitions
 
 
-def create_pod_definition(name, component, node_name):
-    
+def create_deployment_definition(name, component, node_name=None, replicas=1):
+    spec = {
+        'replicas': replicas,
+        'selector': {
+            'matchLabels': {
+                **component['metadata'].get('labels', {})
+            }
+        },
+        'template': {
+            'metadata': {
+                'labels': {
+                    **component['metadata'].get('labels', {})
+                }
+            },
+            'spec': {
+                'containers': component['spec']['containers']
+            }
+        }
+    }
+
+    if node_name is not None:   
+        spec['template']['spec']['nodeSelector'] = {
+            'kubernetes.io/hostname': node_name
+        }
 
     return {
-        'apiVersion': 'v1',
-        'kind': 'Pod',
+        'apiVersion': 'apps/v1',
+        'kind': 'Deployment',
         'metadata': {
             'name': name,
-            'labels': component['metadata'].get('labels', {}) 
+            'labels': component['metadata'].get('labels', {})
         },
-        'spec': {
-            'nodeName': node_name,
-            'containers': component['spec']['containers']
-        }
+        'spec': spec
     }
 
 
 def create_service_definition(name, component):
-
     return {
         'apiVersion': 'v1',
         'kind': 'Service',
         'metadata': {
             'name': name,
-            'labels': component['metadata'].get('labels', {}) 
+            'labels': component['metadata'].get('labels', {})
         },
         'spec': component['spec']
     }
@@ -127,17 +157,14 @@ def no_dash_representer(dumper, value):
     return dumper.represent_mapping('tag:yaml.org,2002:map', value.items(), flow_style=False)
 
 
-def generate_yaml_definition(order, components, folder_name):
+def generate_yaml_definition(order, components, folder_name, instances, optimal):
     os.makedirs(folder_name, exist_ok=True)
     yaml.add_representer(dict, no_dash_representer)
 
     pulumi_yaml = {
         'name': 'my-k8s-app',
         'runtime': 'yaml',
-        'resources': {
-            pod['name']: pod for pod in add_pod_definitions(order, components)
-        }
+        'resources': { pod['name']: pod for pod in add_pod_definitions(order, components, instances, optimal) }
     }
-
-    with open(f"{folder_name}/pulumi_deployment.yaml", "w") as file:
+    with open(f"{folder_name}/orchestration.yaml", "w") as file:
         yaml.dump(pulumi_yaml, file, default_flow_style=False, Dumper=NoAliasDumper, sort_keys=False)

@@ -8,7 +8,7 @@ instances:
   - type: "virus-scanner-type"
     replicas: 1
     
-existingDependencies:
+existingResources:
   - type: "virus-scanner-service-type"
   - type: "header-analyzer-service-type"
   - type: "text-analyzer-service-type"
