@@ -28,7 +28,7 @@ spec:
         - name: PIPELINE_COUNT
           value: "1"
   restartPolicy: Always
-  
+
 ports:
   strong:
     - type: "message-analyzer-service-type"

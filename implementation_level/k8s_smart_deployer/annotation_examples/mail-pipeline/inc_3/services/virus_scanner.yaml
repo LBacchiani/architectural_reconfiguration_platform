@@ -42,4 +42,3 @@ ports:
         containers :
           - name : "virus-scanner"
 
-

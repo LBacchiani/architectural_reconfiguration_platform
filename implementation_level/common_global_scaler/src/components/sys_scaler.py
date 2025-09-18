@@ -1,5 +1,3 @@
-import time
-import yaml
 import os
 import numpy as np
 import asyncio
@@ -109,10 +107,10 @@ class SysScaler:
             for _ in range(iter_number):
                 if num > 0:
                     self.el.call_soon_threadsafe(
-                        lambda path=increment_path:  execute(increment_path, "scaler-stack", "deploy", "")
+                        lambda path=increment_path:  execute(path, "scaler-stack", "deploy", "")
                     )
                 else:
                     self.el.call_soon_threadsafe(
-                        lambda path=increment_path:  execute(increment_path, "scaler-stack", "destroy", "")
+                        lambda path=increment_path:  execute(path, "scaler-stack", "destroy", "")
                     )
                     
