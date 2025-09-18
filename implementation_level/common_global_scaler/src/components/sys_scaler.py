@@ -82,13 +82,13 @@ class SysScaler:
         else:
             increments_to_apply = deltas - self.total_increment
     
-        self._apply_increment(increments_to_apply)
+        self._apply_increment(deltas,increments_to_apply)
 
         self.total_increment = deltas
         self.mcl = self.estimate_mcl(self.curr_config)
-        return self.mcl, increments_to_apply
+        return self.mcl #, increments_to_apply
     
-    def _apply_increment(self, inc_idx):
+    def _apply_increment(self, inc_idx, increments_to_apply):
         """
         Apply the configuration to the cluster.
 
@@ -97,20 +97,26 @@ class SysScaler:
         inc_idx -> the increment index to apply
         """
         for i in range(len(inc_idx)):
-            if inc_idx[i] == 0:
+            if increments_to_apply[i] == 0:
                 continue
             idx = i + 1
-            increment_path = os.path.join(self._folder_path, f"inc_{idx}.py")
+            increment_path = os.path.join(self._folder_path, f"inc_{idx}.yaml")
+            self.el.call_soon_threadsafe(lambda path=increment_path:  execute(path, "scaler-stack", "deploy", "", inc_idx[i]))
+
+            # if inc_idx[i] == 0:
+            #     continue
+            # idx = i + 1
+            # increment_path = os.path.join(self._folder_path, f"inc_{idx}.py")
             
-            num = int(inc_idx[i])
-            iter_number = abs(num)
-            for _ in range(iter_number):
-                if num > 0:
-                    self.el.call_soon_threadsafe(
-                        lambda path=increment_path:  execute(path, "scaler-stack", "deploy", "")
-                    )
-                else:
-                    self.el.call_soon_threadsafe(
-                        lambda path=increment_path:  execute(path, "scaler-stack", "destroy", "")
-                    )
+            # num = int(inc_idx[i])
+            # iter_number = abs(num)
+            # for _ in range(iter_number):
+            #     if num > 0:
+            #         self.el.call_soon_threadsafe(
+            #             lambda path=increment_path:  execute(path, "scaler-stack", "deploy", "")
+            #         )
+            #     else:
+            #         self.el.call_soon_threadsafe(
+            #             lambda path=increment_path:  execute(path, "scaler-stack", "destroy", "")
+            #         )
                     

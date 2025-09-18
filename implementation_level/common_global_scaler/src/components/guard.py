@@ -127,7 +127,9 @@ class Guard:
 
                 if self.should_scale(target_workload, current_mcl) and not self.monitor_only:
                     target_conf = self.scaler.calculate_configuration(target_workload + self.k_big)
-                    current_mcl, _ = self.scaler.process_request(target_conf)    
+                    # current_mcl, _ = self.scaler.process_request(target_conf)    
+                    current_mcl = self.scaler.process_request(target_conf)    
+
 
                 iter += self.sleep
         
