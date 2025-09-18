@@ -1,0 +1,200 @@
+name: my-k8s-app
+runtime: yaml
+resources:
+  image-f61aad72-c48e-4e84-a1f5-ceef400a22a8:
+    name: image-f61aad72-c48e-4e84-a1f5-ceef400a22a8
+    type: kubernetes:apps/v1:Deployment
+    properties:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: image-f61aad72-c48e-4e84-a1f5-ceef400a22a8
+        labels:
+          type: image-type
+      spec:
+        replicas: 2
+        selector:
+          matchLabels:
+            type: image-type
+        template:
+          metadata:
+            labels:
+              type: image-type
+          spec:
+            containers:
+            - name: image
+              image: giovaz94/tea-store-general
+              imagePullPolicy: Always
+              ports:
+              - containerPort: 8002
+              resources:
+                requests:
+                  cpu: 10m
+                  memory: 10M
+              env:
+              - name: MCL
+                value: '600'
+              - name: SERVICE_NAME
+                value: image
+              - name: MAX_SIZE
+                value: '1000'
+              - name: PORT
+                value: '80'
+              - name: OUTPUT_SERVICES
+                value: '{}'
+              - name: MAX_CONNECTIONS
+                value: '70'
+              - name: PIPELINE_COUNT
+                value: '1'
+    options: {}
+  auth-8ef0aa2b-69af-4a15-a39d-620d5ee9f20c:
+    name: auth-8ef0aa2b-69af-4a15-a39d-620d5ee9f20c
+    type: kubernetes:apps/v1:Deployment
+    properties:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: auth-8ef0aa2b-69af-4a15-a39d-620d5ee9f20c
+        labels:
+          type: auth-type
+      spec:
+        replicas: 1
+        selector:
+          matchLabels:
+            type: auth-type
+        template:
+          metadata:
+            labels:
+              type: auth-type
+          spec:
+            containers:
+            - name: auth
+              image: giovaz94/tea-store-general
+              imagePullPolicy: Always
+              ports:
+              - containerPort: 8002
+              resources:
+                requests:
+                  cpu: 10m
+                  memory: 10M
+              env:
+              - name: MCL
+                value: '190'
+              - name: SERVICE_NAME
+                value: auth
+              - name: PORT
+                value: '80'
+              - name: MAX_SIZE
+                value: '1000'
+              - name: OUTPUT_SERVICES
+                value: '{"http://persistence-service/request":"1"}'
+              - name: MAX_CONNECTIONS
+                value: '70'
+              - name: PIPELINE_COUNT
+                value: '1'
+              - name: PORT_PERSISTENCE_SERVICE
+                type: persistence-service-type
+    options: {}
+  webui-a51b79f0-8526-43d5-8191-8912bc66e7a0:
+    name: webui-a51b79f0-8526-43d5-8191-8912bc66e7a0
+    type: kubernetes:apps/v1:Deployment
+    properties:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: webui-a51b79f0-8526-43d5-8191-8912bc66e7a0
+        labels:
+          type: webui-type
+      spec:
+        replicas: 2
+        selector:
+          matchLabels:
+            type: webui-type
+        template:
+          metadata:
+            labels:
+              type: webui-type
+          spec:
+            containers:
+            - name: webui
+              image: giovaz94/tea-store-general
+              imagePullPolicy: Always
+              ports:
+              - containerPort: 8001
+              resources:
+                requests:
+                  cpu: 10m
+                  memory: 10M
+              env:
+              - name: MCL
+                value: '150'
+              - name: SERVICE_NAME
+                value: webUI
+              - name: PORT
+                value: '80'
+              - name: MAX_SIZE
+                value: '1000'
+              - name: OUTPUT_SERVICES
+                value: '{"http://persistence-service/request":"1", "http://recommender-service/request":"1",
+                  "http://image-service/request":"2"}'
+              - name: MAX_CONNECTIONS
+                value: '70'
+              - name: PIPELINE_COUNT
+                value: '1'
+              - name: PORT_IMAGE_SERVICE
+                type: image-service-type
+              - name: PORT_PERSISTENCE_SERVICE
+                type: persistence-service-type
+              - name: PORT_AUTH_SERVICE
+                type: auth-service-type
+              - name: PORT_RECOMMENDER_SERVICE
+                type: recommender-service-type
+              - name: PORT_PROMETHEUS_SERVICE
+                type: prometheus-service-type
+    options: {}
+  persistence-64e88520-7628-432c-aa5e-542475372dd1:
+    name: persistence-64e88520-7628-432c-aa5e-542475372dd1
+    type: kubernetes:apps/v1:Deployment
+    properties:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: persistence-64e88520-7628-432c-aa5e-542475372dd1
+        labels:
+          type: persistence-type
+      spec:
+        replicas: 1
+        selector:
+          matchLabels:
+            type: persistence-type
+        template:
+          metadata:
+            labels:
+              type: persistence-type
+          spec:
+            containers:
+            - name: persistence
+              image: giovaz94/tea-store-general
+              imagePullPolicy: Always
+              ports:
+              - containerPort: 8003
+              resources:
+                requests:
+                  cpu: 10m
+                  memory: 10M
+              env:
+              - name: MCL
+                value: '905'
+              - name: SERVICE_NAME
+                value: persistence
+              - name: PORT
+                value: '80'
+              - name: MAX_SIZE
+                value: '1000'
+              - name: OUTPUT_SERVICES
+                value: '{}'
+              - name: MAX_CONNECTIONS
+                value: '70'
+              - name: PIPELINE_COUNT
+                value: '1'
+    options: {}

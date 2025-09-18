@@ -17,3 +17,4 @@ existingResources:
   - type: "persistence-service-type"
   - type: "recommender-service-type"
   - type: "webui-service-type"
+  - type: "prometheus-service-type"

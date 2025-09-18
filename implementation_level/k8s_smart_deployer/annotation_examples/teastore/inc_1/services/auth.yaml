@@ -29,3 +29,11 @@ spec:
           value: "1"
           
   restartPolicy: Always
+
+ports:
+  strong:
+    - type: "persistence-service-type"
+      config:
+        envName: PORT_PERSISTENCE_SERVICE
+        containers :
+          - name : "auth"
