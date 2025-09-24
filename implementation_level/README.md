@@ -11,5 +11,3 @@ Repository for Architectural Reconfiguration Platform paper
 - `k6-test/`: Contains the k6 load tests for both systems.
   - `mail/`: Contains the k6 load tests for the mail pipeline use case system.
   - `tea-store/`: Contains the k6 load tests for the tea store use case system.
-- `annotations/`: Contains the Kubernetes annotations used by the k8s_smart_deployer tool for generating the orchestrations.
-
