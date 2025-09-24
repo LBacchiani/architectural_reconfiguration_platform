@@ -34,6 +34,7 @@ class Guard:
         prometheus_service_port = os.environ.get("PROMETHEUS_SERVICE_PORT", "59001")
 
         self.monitor_only = os.environ.get("MONITOR_ONLY", "false").lower() == 'true'
+        self.additional = int(os.environ.get("ADDITIONAL_SERVICE", "0")) if self.monitor_only else 0
         prometheus_url = f"http://{prometheus_service_address}:{prometheus_service_port}"
         self.prometheus_instance = PrometheusConnect(url=prometheus_url)
 
@@ -122,7 +123,8 @@ class Guard:
                     completed=completed if completed is not None else 0,
                     loss=loss if loss is not None else 0,
                     pred_workload=pred_workload if self.proactiveness and iter > 0 else None,
-                    mixed_workload=mixed_workload
+                    mixed_workload=mixed_workload,
+                    additional = self.additional
                 )
 
                 if self.should_scale(target_workload, current_mcl) and not self.monitor_only:

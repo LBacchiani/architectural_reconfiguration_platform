@@ -13,7 +13,7 @@ class GuardLogger:
         return cls(enable_proactive=proactive, enable_proactive_reactive=proactive_reactive)
     
     def log_metrics(self, iter_num, avg_lat, measured_workload, current_mcl, config, 
-                   total_requests=0, completed=0, loss=0, pred_workload=None, mixed_workload=None):
+                   total_requests=0, completed=0, loss=0, pred_workload=None, mixed_workload=None, additional=0):
         """Log metrics in the exact same format as the original code."""
         
         log_str = f"{iter_num} {avg_lat}"
@@ -26,7 +26,7 @@ class GuardLogger:
         if self.enable_proactive_reactive and mixed_workload is not None:
             log_str += f" mixed: {mixed_workload}"
         
-        log_str += f" tot: {total_requests} comp: {completed} rej: {loss} supp: {current_mcl} inst: {config}"
+        log_str += f" tot: {total_requests} comp: {completed} rej: {loss} supp: {current_mcl} inst: {config + additional}"
         
         print(log_str, flush=True)
         return log_str

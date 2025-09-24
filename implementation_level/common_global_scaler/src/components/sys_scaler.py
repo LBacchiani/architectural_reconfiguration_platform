@@ -2,7 +2,7 @@ import os
 import numpy as np
 import asyncio
 from threading import Thread
-from components.executor import execute
+from components.executor import *
 
 def startup_event_loop(event_loop):
     asyncio.set_event_loop(event_loop)
@@ -101,7 +101,7 @@ class SysScaler:
                 continue
             idx = i + 1
             increment_path = os.path.join(self._folder_path, f"inc_{idx}.yaml")
-            self.el.call_soon_threadsafe(lambda path=increment_path:  execute(path, "scaler-stack", "deploy", "", inc_idx[i]))
+            self.el.call_soon_threadsafe(lambda path=increment_path, j=i, replicas=inc_idx[i]: execute_fully_automatic(file_path=path,stack_name=f"organization/inc_{j+1}", operation="deploy", project_path=f"orchestrations/inc_{j+1}", replica_multiplier=int(replicas)))
 
             # if inc_idx[i] == 0:
             #     continue

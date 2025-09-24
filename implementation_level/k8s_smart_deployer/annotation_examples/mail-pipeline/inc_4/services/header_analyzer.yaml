@@ -29,10 +29,11 @@ spec:
           value: "1"
   restartPolicy: Always
 
+
 ports:
   strong:
     - type: "message-analyzer-service-type"
       config:
-        envName: PORT_MESSAGE_ANALYZER_SERVICE
+        envName: MESSAGE_ANALYZER
         containers :
           - name : "header-analyzer"

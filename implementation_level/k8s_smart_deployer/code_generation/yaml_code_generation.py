@@ -99,7 +99,7 @@ def add_pod_definitions(order, components, instances, optimal):
             'name': variable_name,
             'type': 'kubernetes:apps/v1:Deployment' if kind == 'Pod' else 'kubernetes:core/v1:Service',
             'properties': props,
-            'options': {"dependsOn": depends_on} if depends_on else {}
+            'options': {"dependsOn": depends_on} if depends_on else {"customTimeouts": {"create": "50ms", "update": "50ms", "delete": "50ms"}}
         })
 
     return pod_definitions

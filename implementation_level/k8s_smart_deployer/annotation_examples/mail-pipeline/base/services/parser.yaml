@@ -34,23 +34,23 @@ ports:
   
     - type: "virus-scanner-service-type"
       config:
-        envName: PORT_VIRUS_SCANNER_SERVICE
+        envName: VIRUS_SCANNER
         containers :
           - name : "parser"
     - type: "header-analyzer-service-type"
       config:
-        envName: PORT_HEADER_ANALYZER_SERVICE
+        envName: HEADER_ANALYZER
         containers :
           - name : "parser"
     
     - type: "text-analyzer-service-type"
       config:
-        envName: PORT_TEXT_ANALYZER_SERVICE
+        envName: TEXT_ANALYZER
         containers :
           - name : "parser"
   
     - type: "link-analyzer-service-type"
       config:
-        envName: PORT_LINK_ANALYZER_SERVICE
+        envName: LINK_ANALYZER
         containers :
           - name : "parser"

@@ -34,6 +34,6 @@ ports:
   strong:
     - type: "image-analyzer-service-type"
       config:
-        envName: PORT_IMAGE_ANALYZER_SERVICE
+        envName: IMAGE_ANALYZER
         containers :
           - name : "attachment-manager"

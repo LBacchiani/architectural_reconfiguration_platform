@@ -15,7 +15,7 @@ spec:
       containers:
         - name: text-analyzer
           image: giovaz94/mail-pipeline-general
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           ports:
             - containerPort: 80
           env:
@@ -41,6 +41,8 @@ apiVersion: v1
 kind: Service
 metadata:
   name: text-analyzer-service
+  labels:
+    type: text-analyzer-service-type
   annotations:
       prometheus.io/scrape: "true"
       prometheus.io/port: "80"

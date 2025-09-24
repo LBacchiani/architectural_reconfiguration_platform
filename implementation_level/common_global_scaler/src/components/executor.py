@@ -1,182 +1,123 @@
 import subprocess
-import shutil
+import tempfile
 from pathlib import Path
 from enum import Enum
-from kubernetes import client, config
-from typing import Dict, List
 import yaml
-import ast
+import shutil
+from typing import Dict, List
 
 Op = Enum("Op", [("DEPLOY", "deploy"), ("DESTROY", "destroy")])
-def execute_python(file_path: str, stack_name: str, operation: str, mapping:  Dict[str, List[str]]):
-    converted_path = Path(file_path)
-    ensure_path(converted_path)
-    check_file_extension(converted_path, ".py")
-    ensure_operation_exists(operation)
 
-    substitute_env_types_in_python(converted_path, mapping)
-
+def execute_fully_automatic(file_path: str, stack_name: str, operation: str, project_path: str, replica_multiplier: int):
+    mappings = get_service_mappings_auto()
+    print("REPLICAS: " + str(replica_multiplier))
     try:
-        if operation == Op.DEPLOY.value:
-            subprocess.run(["python", file_path, stack_name], check=True)
-        elif operation == Op.DESTROY.value:
-            subprocess.run(["python", file_path, stack_name, "destroy"], check=True)
-
-    except subprocess.CalledProcessError as e:
+        return execute_pulumi_auto(file_path, stack_name, operation, project_path, mappings, replica_multiplier)         
+    except Exception as e:
         print(f"Execution failed: {e}")
+        return False
 
-def execute_yaml(file_path: str, stack_name: str, operation: str, project_path: str,
-                 mapping: Dict[str, List[str]], replica_multiplier: int):
-    converted_file_path = Path(file_path)
-    converted_project_path = Path(project_path)
-    ensure_path(converted_file_path)
-    check_file_extension(converted_file_path, ".yaml")
-    ensure_operation_exists(operation)
+def get_service_mappings_auto() -> Dict[str, List[str]]:
+    """Auto-detect service mappings with fallbacks"""
+    try:
+        # Try in-cluster config first
+        from kubernetes import client, config
+        config.load_incluster_config()
+        print("Using in-cluster Kubernetes config")
+    except:
+        try:
+            from kubernetes import client, config
+            config.load_kube_config()
+            print("Using local kubeconfig")
+        except Exception as e:
+            print(f"No Kubernetes config found: {e}")
+            return {}
     
     try:
-        destination = converted_project_path / "Pulumi.yaml"
-        shutil.copy(converted_file_path, destination)
+        v1 = client.CoreV1Api()
+        services = v1.list_service_for_all_namespaces().items
+        
+        type_map: Dict[str, List[str]] = {}
+        for svc in services:
+            name = svc.metadata.name
+            labels = svc.metadata.labels or {}
+            svc_type = labels.get("type")
+            if svc_type:
+                type_map.setdefault(svc_type, []).append(name)
+        
+        print(f"Found {len(type_map)} service type mappings")
+        return type_map
+    except Exception as e:
+        print(f"Could not get service mappings: {e}")
+        return {}
 
-        substitute_env_types_in_yaml(destination, mapping)
-
-        # Scale replicas if multiplier > 0
+def execute_pulumi_auto(file_path: str, stack_name: str, operation: str, project_path: str, mapping: Dict[str, List[str]], replica_multiplier: int) -> bool:
+    """Fully automatic Pulumi execution"""
+    try:
+        project_path = Path(project_path)
+        project_path.mkdir(parents=True, exist_ok=True)
+        
+        # Process resources
+        resources_data = yaml.safe_load(Path(file_path).read_text())
+        
+        # Auto-substitute environments
+        for res in resources_data.get("resources", {}).values():
+            template_spec = res.get("properties", {}).get("spec", {}).get("template", {}).get("spec", {})
+            for container in template_spec.get("containers", []):
+                for env in container.get("env", []):
+                    if "type" in env:
+                        type_key = env.pop("type")
+                        if type_key in mapping and mapping[type_key]:
+                            env["value"] = "http://" + mapping[type_key][0] + "/request"
+                        else:
+                            env["value"] = f"missing-{type_key}"
+        
+        # Auto-scale
         if replica_multiplier > 0:
-            data = yaml.safe_load(destination.read_text())
-            for res in data.get("resources", {}).values():
+            for res in resources_data.get("resources", {}).values():
                 spec = res.get("properties", {}).get("spec", {})
                 if "replicas" in spec:
                     spec["replicas"] = spec["replicas"] * replica_multiplier
-            destination.write_text(yaml.safe_dump(data, sort_keys=False))
-        
-        command = "up" if operation == Op.DEPLOY.value else "destroy"
-
-        subprocess.run(
-            ["pulumi", "stack", "select", "--non-interactive", "-c", stack_name],
-            cwd=converted_project_path,
-            check=True
-        )
-
-        out_up_command = subprocess.run(
-            ["pulumi", command, "-f", "-y", "--non-interactive", "--stack", stack_name],
-            cwd=converted_project_path,
-            capture_output=True,
-            text=True,
-        )
-
-        print(out_up_command.stdout)
-
-    except subprocess.CalledProcessError as e:
-        print(f"Pulumi command failed: {e}")
-        print("Error output:", e.stderr)
-
-def execute(file_path: str, stack_name: str, operation: str, project_path: str, replica_multiplier: int):
-    """
-    Executes the appropriate function (execute_python or execute_yaml)
-    based on the file extension of the provided file_path.
-    Adds support for scaling replicas. If replica_multiplier == 0, destroy the stack.
-    """
-    file_extension = Path(file_path).suffix
-    mappings = map_services_by_type(in_cluster=False)
-    print(mappings)
-
-    if replica_multiplier == 0:
-        operation = Op.DESTROY.value
-
-    if file_extension == ".py":
-        execute_python(file_path, stack_name, operation, mappings)
-    elif file_extension == ".yaml":
-        execute_yaml(file_path, stack_name, operation, project_path, mappings, replica_multiplier)
-    else:
-        raise ValueError(f"Unsupported file type: {file_extension}. Supported types are .py and .yaml.")
-
-def ensure_operation_exists(operation: str):
-    allowed = {op.value for op in Op}
-    if operation not in allowed:
-        raise ValueError(f"Operation {operation!r} is not supported.  Choose one of {sorted(allowed)}")
-
-def ensure_path(file_path: Path):
-    if not file_path.exists():
-        raise FileNotFoundError(f"File {file_path} does not exist.")
-
-def check_file_extension(file_path: Path, extension: str):
-    if not file_path.suffix == extension:
-        raise ValueError(f"File {file_path} is not of the correct type, it should be {extension}.")
-
-def map_services_by_type(in_cluster: bool = False) -> Dict[str, List[str]]:
-    if in_cluster:
-        config.load_incluster_config()
-    else:
-        config.load_kube_config()
-
-    v1 = client.CoreV1Api()
-    
-    services = v1.list_service_for_all_namespaces().items
-
-    type_map: Dict[str, List[str]] = {}
-    
-    for svc in services:
-        name = svc.metadata.name
-        labels = svc.metadata.labels or {}
-        print(name, labels)
-        svc_type = labels.get("type")
-        if not svc_type:
-            continue
-        
-        type_map.setdefault(svc_type, []).append(name)
-
-    return type_map
-
-def substitute_env_types_in_yaml(yaml_path: Path, mapping: Dict[str, List[str]]):
-    data = yaml.safe_load(yaml_path.read_text())
-
-    for res in data.get("resources", {}).values():
-        props = res.get("properties", {})
-        spec  = props.get("spec", {})
-        for container in spec.get("containers", []):
-            for env in container.get("env", []):
-                if "type" in env:
-                    type_key = env.pop("type")
-                    if type_key not in mapping or not mapping[type_key]:
-                        raise KeyError(f"No mapping for env type '{type_key}'")
-                    env["value"] = mapping[type_key][0]
-
-    yaml_path.write_text(yaml.safe_dump(data, sort_keys=False))
-
-def substitute_env_types_in_python(py_path: Path, mapping: Dict[str, List[str]]):
-
-    source = py_path.read_text()
-    tree = ast.parse(source)
-
-    class EnvTypeRewriter(ast.NodeTransformer):
-        def visit_Call(self, node: ast.Call) -> ast.AST:
-            func = node.func
-            is_envvar = False
-            if isinstance(func, ast.Attribute) and func.attr == "EnvVarArgs":
-                is_envvar = True
-            elif isinstance(func, ast.Name) and func.id == "EnvVarArgs":
-                is_envvar = True
-
-            if is_envvar:
-                new_kwargs = []
-                for kw in node.keywords:
-                    if kw.arg == "type":
-                        if not (isinstance(kw.value, ast.Constant) and isinstance(kw.value.value, str)):
-                            raise ValueError(f"Expected a string literal for 'type', got {ast.dump(kw.value)}")
-                        type_key = kw.value.value
-                        if type_key not in mapping or not mapping[type_key]:
-                            raise KeyError(f"No mapping entry for env-var type '{type_key}'")
-                        new_kwargs.append(ast.keyword(
-                            arg="value",
-                            value=ast.Constant(mapping[type_key][0])
-                        ))
-                    else:
-                        new_kwargs.append(kw)
-                node.keywords = new_kwargs
-
-            return self.generic_visit(node)
-
-    new_tree = EnvTypeRewriter().visit(tree)
-    ast.fix_missing_locations(new_tree)
-
-    new_source = ast.unparse(new_tree)
-    py_path.write_text(new_source)
+            (project_path / "Pulumi.yaml").write_text(yaml.safe_dump(resources_data, default_flow_style=False))
+            
+            # Auto-login if needed
+            login_check = subprocess.run(["pulumi", "whoami"], capture_output=True)
+            if login_check.returncode != 0:
+                print("Auto-login to Pulumi (local backend)...")
+                subprocess.run(["pulumi", "login", "--local"], cwd=project_path, check=True)
+            
+            # Auto-create/select stack
+            subprocess.run([
+                "bash", "-c",
+                f"pulumi stack select {stack_name} 2>/dev/null || pulumi stack init {stack_name}"
+            ], cwd=project_path, check=True)
+            
+            # Execute command
+            command = "up" if operation == Op.DEPLOY.value else "destroy"
+            print(f"Running pulumi {command}...")
+            
+            result = subprocess.run([
+                "pulumi", command, "--yes", "--non-interactive", "--skip-preview",
+                "--parallel", "20", "--stack", f"{stack_name}"
+            ], cwd=project_path, capture_output=True, text=True, timeout=600)
+            
+            if result.returncode == 0:
+                print(f"Pulumi {command} completed successfully")
+                return True
+            else:
+                print(f"Pulumi {command} failed")
+                if result.stderr:
+                    print(result.stderr)
+                return False
+        else:
+            # ELSE branch: scale all deployments to 0 via kubectl
+            print("Scaling all deployments to 0 replicas via kubectl...")
+            for res_name in resources_data.get("resources", {}):
+                subprocess.run(["kubectl", "scale", "deployment", res_name, "--replicas=0", "--namespace=default"], check=False)
+            print("All deployments scaled to 0.")
+            return True
+            
+                
+    except Exception as e:
+        print(f"Pulumi execution failed: {e}")
+        return False

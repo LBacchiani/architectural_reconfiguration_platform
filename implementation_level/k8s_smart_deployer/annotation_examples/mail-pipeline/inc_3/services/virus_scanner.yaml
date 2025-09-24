@@ -33,12 +33,12 @@ ports:
   strong:
     - type: "message-analyzer-service-type"
       config:
-        envName: PORT_MESSAGE_ANALYZER_SERVICE
+        envName: MESSAGE_ANALYZER
         containers :
           - name : "virus-scanner"
     - type: "attachment-manager-service-type"
       config:
-        envName: PORT_ATTACHMENT_MANAGER_SERVICE
+        envName: ATTACHMENT_MANAGER
         containers :
           - name : "virus-scanner"
 

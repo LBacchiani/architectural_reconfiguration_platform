@@ -1,4 +1,4 @@
-name: my-k8s-app
+name: inc_1
 runtime: yaml
 resources:
   message-analyzer-273cf132-5497-4677-89c0-11af00d321a7:
@@ -24,7 +24,7 @@ resources:
             containers:
             - name: message-analyzer
               image: giovaz94/mail-pipeline-general
-              imagePullPolicy: IfNotPresent
+              imagePullPolicy: Always
               ports:
               - containerPort: 80
               resources:
@@ -46,7 +46,10 @@ resources:
                 value: '70'
               - name: PIPELINE_COUNT
                 value: '1'
-    options: {}
+    options: 
+        customTimeouts:
+            create: "500ms"
+            update: "500ms"
   virus-scanner-a782700b-fd88-4021-9834-b574d24a5a42:
     name: virus-scanner-a782700b-fd88-4021-9834-b574d24a5a42
     type: kubernetes:apps/v1:Deployment
@@ -70,7 +73,7 @@ resources:
             containers:
             - name: virus-scanner
               image: giovaz94/mail-pipeline-general
-              imagePullPolicy: IfNotPresent
+              imagePullPolicy: Always
               ports:
               - containerPort: 80
               resources:
@@ -92,11 +95,14 @@ resources:
                 value: '70'
               - name: PIPELINE_COUNT
                 value: '1'
-              - name: PORT_MESSAGE_ANALYZER_SERVICE
+              - name: MESSAGE_ANALYZER
                 type: message-analyzer-service-type
-              - name: PORT_ATTACHMENT_MANAGER_SERVICE
+              - name: ATTACHMENT_MANAGER
                 type: attachment-manager-service-type
-    options: {}
+    options: 
+        customTimeouts:
+            create: "50ms"
+            update: "50ms"
   parser-9d1d2f84-cba8-427b-9afe-f464694250c6:
     name: parser-9d1d2f84-cba8-427b-9afe-f464694250c6
     type: kubernetes:apps/v1:Deployment
@@ -120,7 +126,7 @@ resources:
             containers:
             - name: parser
               image: giovaz94/mail-pipeline-general
-              imagePullPolicy: IfNotPresent
+              imagePullPolicy: Always
               ports:
               - containerPort: 80
               resources:
@@ -142,12 +148,15 @@ resources:
                 value: '70'
               - name: PIPELINE_COUNT
                 value: '1'
-              - name: PORT_VIRUS_SCANNER_SERVICE
+              - name: VIRUS_SCANNER
                 type: virus-scanner-service-type
-              - name: PORT_HEADER_ANALYZER_SERVICE
+              - name: HEADER_ANALYZER
                 type: header-analyzer-service-type
-              - name: PORT_TEXT_ANALYZER_SERVICE
+              - name: TEXT_ANALYZER
                 type: text-analyzer-service-type
-              - name: PORT_LINK_ANALYZER_SERVICE
+              - name: LINK_ANALYZER
                 type: link-analyzer-service-type
-    options: {}
+    options: 
+        customTimeouts:
+            create: "50ms"
+            update: "50ms"

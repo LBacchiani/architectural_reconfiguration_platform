@@ -15,7 +15,7 @@ rules:
 
   - apiGroups: ["apps"]
     resources: ["deployments", "deployments/scale"]
-    verbs: ["get", "list", "patch", "update"]
+    verbs: ["create", "get", "list", "patch", "update"]
 
   # cluster-wide read of Services (needed by list_service_for_all_namespaces)
   - apiGroups: [""]

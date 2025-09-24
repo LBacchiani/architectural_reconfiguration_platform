@@ -14,7 +14,7 @@ spec:
       serviceAccountName: scaler-service-account
       containers:
         - name: gs-algorithm
-          image: giovaz94/cgs-mail-pipeline 
+          image: lorenzobacchiani/mail_pipeline_gs
           imagePullPolicy: Always
           ports:
             - containerPort: 5000
@@ -65,11 +65,6 @@ spec:
               value: "message_lost_global_counter"
             - name: ADDITIONAL_SERVICE
               value: "3"
-            - name: PULUMI_ACCESS_TOKEN
-              valueFrom:
-                secretKeyRef:
-                  name: pulumi-access
-                  key: PULUMI_ACCESS_TOKEN
       restartPolicy: Always
 ---
 apiVersion: v1
@@ -83,3 +78,30 @@ spec:
     - protocol: TCP
       port: 5000
       targetPort: 5000
+---
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: default
+  name: pod-creator
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "pods/status"]
+    verbs: ["create", "get", "list", "delete", "watch", "patch", "update"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "deployments/scale"]
+    verbs: ["get", "list", "patch", "update"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: pod-creator-binding
+  namespace: default
+subjects:
+  - kind: ServiceAccount
+    name: scaler-service-account
+roleRef:
+  kind: Role
+  name: pod-creator
+  apiGroup: rbac.authorization.k8s.io
