@@ -1,15 +1,8 @@
-import time
-from copy import copy
-
-import yaml
 import os
 import numpy as np
-import kubernetes
-from kubernetes import client, config
-from components.deployment import deploy_pod, delete_pod
 import asyncio
 from threading import Thread
-
+from components.executor import *
 
 def startup_event_loop(event_loop):
     asyncio.set_event_loop(event_loop)
@@ -27,12 +20,6 @@ class SysScaler:
         self._folder_path = folder_path
         self.mcl = self.estimate_mcl(base_config)
         self.curr_config = base_config
-    
-        if os.environ.get("INCLUSTER_CONFIG") == "true":
-            config.load_incluster_config()
-        else:
-            config.load_kube_config()
-        self.k8s_client = client.CoreV1Api()
         self.total_increment = None
 
         self.el = asyncio.new_event_loop()
@@ -74,8 +61,7 @@ class SysScaler:
         Return the current mcl of the system.
         """
         return self.mcl
-    
-        
+       
     def get_current_config(self):
         """
         Return the current configuration of the system.
@@ -96,13 +82,13 @@ class SysScaler:
         else:
             increments_to_apply = deltas - self.total_increment
     
-        self._apply_increment(increments_to_apply)
+        self._apply_increment(deltas,increments_to_apply)
 
         self.total_increment = deltas
         self.mcl = self.estimate_mcl(self.curr_config)
-        return self.mcl, increments_to_apply
-
-    def _apply_increment(self, inc_idx):
+        return self.mcl #, increments_to_apply
+    
+    def _apply_increment(self, inc_idx, increments_to_apply):
         """
         Apply the configuration to the cluster.
 
@@ -111,28 +97,26 @@ class SysScaler:
         inc_idx -> the increment index to apply
         """
         for i in range(len(inc_idx)):
-            if inc_idx[i] == 0:
+            if increments_to_apply[i] == 0:
                 continue
             idx = i + 1
-            # manifest_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", self._folder_path, f"inc_{idx}")
-            manifest_path = os.path.join(self._folder_path, f"inc_{idx}")
-            manifest_files = os.listdir(manifest_path)
+            increment_path = os.path.join(self._folder_path, f"inc_{idx}.yaml")
+            self.el.call_soon_threadsafe(lambda path=increment_path, j=i, replicas=inc_idx[i]: execute_fully_automatic(file_path=path,stack_name=f"organization/inc_{j+1}", operation="deploy", project_path=f"orchestrations/inc_{j+1}", replica_multiplier=int(replicas)))
 
-            num = int(inc_idx[i])
-            iter_number = abs(num)
-
-            for _ in range(iter_number):
-                for file in manifest_files:
-                    if num > 0:
-                        target_path = os.path.join(manifest_path, file)
-                        self.el.call_soon_threadsafe(
-                            lambda path=target_path: deploy_pod(self.k8s_client, path)
-                        )
-                    else:
-                        with open(os.path.join(manifest_path, file), 'r') as manifest_file:
-                            pod_manifest = yaml.safe_load(manifest_file)
-                            generate_name = pod_manifest['metadata']['generateName']
-                            node_name = ''#pod_manifest["spec"]["#nodeName"]
-                            self.el.call_soon_threadsafe(
-                                lambda name=generate_name, node=node_name: delete_pod(self.k8s_client, name, node)
-                            )
+            # if inc_idx[i] == 0:
+            #     continue
+            # idx = i + 1
+            # increment_path = os.path.join(self._folder_path, f"inc_{idx}.py")
+            
+            # num = int(inc_idx[i])
+            # iter_number = abs(num)
+            # for _ in range(iter_number):
+            #     if num > 0:
+            #         self.el.call_soon_threadsafe(
+            #             lambda path=increment_path:  execute(path, "scaler-stack", "deploy", "")
+            #         )
+            #     else:
+            #         self.el.call_soon_threadsafe(
+            #             lambda path=increment_path:  execute(path, "scaler-stack", "destroy", "")
+            #         )
+                    

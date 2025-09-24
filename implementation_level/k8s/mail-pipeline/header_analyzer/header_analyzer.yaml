@@ -15,7 +15,7 @@ spec:
       containers:
         - name: header-analyzer
           image: giovaz94/mail-pipeline-general
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           ports:
             - containerPort: 80
           env:
@@ -41,6 +41,8 @@ apiVersion: v1
 kind: Service
 metadata:
   name: header-analyzer-service
+  labels:
+    type: header-analyzer-service-type
   annotations:
       prometheus.io/scrape: "true"
       prometheus.io/port: "80"

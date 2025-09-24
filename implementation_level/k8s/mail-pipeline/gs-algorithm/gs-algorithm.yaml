@@ -14,8 +14,8 @@ spec:
       serviceAccountName: scaler-service-account
       containers:
         - name: gs-algorithm
-          image: giovaz94/mail-pipeline-gs-new
-          imagePullPolicy: IfNotPresent
+          image: lorenzobacchiani/mail_pipeline_gs
+          imagePullPolicy: Always
           ports:
             - containerPort: 5000
           env:
@@ -38,7 +38,33 @@ spec:
             - name: PROMETHEUS_SERVICE_PORT
               value: "8080"
             - name: MONITOR_ONLY
-              value: "true"
+              value: "false"
+            - name: FOLDER_PATH
+              value: "/app/my_files"
+            - name: SYSTEM_BASE_CONFIGURATION
+              value: 1,1,1,1,1,1,1,1 
+            - name: MICROSERVICES_MCL
+              value: 110,1000000000,1000000000,1000000000,120,231,231,300
+            - name: MICROSERVICES_MF
+              value: 1,1,1,1,2,1.5,1.5,5
+            - name: INCREMENT_1
+              value: "1,0,0,0,1,0,0,1"
+            - name: INCREMENT_2
+              value: "1,0,0,0,3,1,1,3"
+            - name: INCREMENT_3
+              value: "2,0,0,0,4,1,1,4"
+            - name: INCREMENT_4
+              value: "3,0,0,0,6,2,2,6"
+            - name: HTTP_REQUESTS_METRIC
+              value: "http_requests_total_parser_counter"
+            - name: BEHAVIOUR_EXECUTION_METRIC
+              value: "http_requests_total_global"
+            - name: BEHAVIOUR_TIME_METRIC
+              value: "http_requests_total_time"
+            - name: MESSAGE_LOST_METRIC
+              value: "message_lost_global_counter"
+            - name: ADDITIONAL_SERVICE
+              value: "3"
       restartPolicy: Always
 ---
 apiVersion: v1

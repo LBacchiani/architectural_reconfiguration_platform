@@ -20,12 +20,10 @@ spec:
 ports:
   strong:
     - type: "birex-data-processor-service-type"
-      id: PORT_BIREX_DATA_PROCESSOR_SERVICE
-      value: 1
-
-    - type: "birex-alerting-service-type"
-      id: PORT_BIREX_ALERTING_SERVICE
-      value: 1
+      config:
+        envName: PORT_BIREX_DATA_PROCESSOR_SERVICE
+        containers:
+          - name: birex-alerting
 
 
   

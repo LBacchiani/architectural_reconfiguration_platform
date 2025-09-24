@@ -9,9 +9,10 @@ spec:
         requests:
           cpu: "10m"
           memory: "10M"
-
 ports:
   strong:
     - type: "birex-collector-service-type"
-      id: PORT_BIREX_COLLECTOR_SERVICE
-      value: 1
+      config:
+        envName: PORT_BIREX_COLLECTOR_SERVICE
+        containers:
+          - name: birex-collector

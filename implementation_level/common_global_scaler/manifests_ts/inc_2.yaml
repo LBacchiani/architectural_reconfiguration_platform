@@ -1,0 +1,212 @@
+name: inc_2
+runtime: yaml
+resources:
+  image-edf9f0e7-9ae9-44e2-94ad-325f997be13f:
+    name: image-edf9f0e7-9ae9-44e2-94ad-325f997be13f
+    type: kubernetes:apps/v1:Deployment
+    properties:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: image-edf9f0e7-9ae9-44e2-94ad-325f997be13f
+        labels:
+          type: image-type
+      spec:
+        replicas: 2
+        selector:
+          matchLabels:
+            type: image-type
+        template:
+          metadata:
+            labels:
+              type: image-type
+          spec:
+            containers:
+            - name: image
+              image: giovaz94/tea-store-general
+              imagePullPolicy: Always
+              ports:
+              - containerPort: 8002
+              resources:
+                requests:
+                  cpu: 10m
+                  memory: 10M
+              env:
+              - name: MCL
+                value: '600'
+              - name: SERVICE_NAME
+                value: image
+              - name: MAX_SIZE
+                value: '1000'
+              - name: PORT
+                value: '80'
+              - name: OUTPUT_SERVICES
+                value: '{}'
+              - name: MAX_CONNECTIONS
+                value: '70'
+              - name: PIPELINE_COUNT
+                value: '1'
+    options: 
+        customTimeouts:
+            create: "50ms"
+            update: "50ms"
+  auth-a4a7dce2-a9a9-4405-8614-d1ba75491f2e:
+    name: auth-a4a7dce2-a9a9-4405-8614-d1ba75491f2e
+    type: kubernetes:apps/v1:Deployment
+    properties:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: auth-a4a7dce2-a9a9-4405-8614-d1ba75491f2e
+        labels:
+          type: auth-type
+      spec:
+        replicas: 1
+        selector:
+          matchLabels:
+            type: auth-type
+        template:
+          metadata:
+            labels:
+              type: auth-type
+          spec:
+            containers:
+            - name: auth
+              image: giovaz94/tea-store-general
+              imagePullPolicy: Always
+              ports:
+              - containerPort: 8002
+              resources:
+                requests:
+                  cpu: 10m
+                  memory: 10M
+              env:
+              - name: MCL
+                value: '190'
+              - name: SERVICE_NAME
+                value: auth
+              - name: PORT
+                value: '80'
+              - name: MAX_SIZE
+                value: '1000'
+              - name: OUTPUT_SERVICES
+                value: '{"http://persistence-service/request":"1"}'
+              - name: MAX_CONNECTIONS
+                value: '70'
+              - name: PIPELINE_COUNT
+                value: '1'
+              - name: PORT_PERSISTENCE_SERVICE
+                type: persistence-service-type
+    options: 
+        customTimeouts:
+            create: "50ms"
+            update: "50ms"
+  webui-dc95f5ce-093b-4687-a310-6923576b0dde:
+    name: webui-dc95f5ce-093b-4687-a310-6923576b0dde
+    type: kubernetes:apps/v1:Deployment
+    properties:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: webui-dc95f5ce-093b-4687-a310-6923576b0dde
+        labels:
+          type: webui-type
+      spec:
+        replicas: 1
+        selector:
+          matchLabels:
+            type: webui-type
+        template:
+          metadata:
+            labels:
+              type: webui-type
+          spec:
+            containers:
+            - name: webui
+              image: giovaz94/tea-store-general
+              imagePullPolicy: Always
+              ports:
+              - containerPort: 8001
+              resources:
+                requests:
+                  cpu: 10m
+                  memory: 10M
+              env:
+              - name: MCL
+                value: '150'
+              - name: SERVICE_NAME
+                value: webUI
+              - name: PORT
+                value: '80'
+              - name: MAX_SIZE
+                value: '1000'
+              - name: OUTPUT_SERVICES
+                value: '{"http://persistence-service/request":"1", "http://recommender-service/request":"1",
+                  "http://image-service/request":"2"}'
+              - name: MAX_CONNECTIONS
+                value: '70'
+              - name: PIPELINE_COUNT
+                value: '1'
+              - name: PORT_IMAGE_SERVICE
+                type: image-service-type
+              - name: PORT_PERSISTENCE_SERVICE
+                type: persistence-service-type
+              - name: PORT_AUTH_SERVICE
+                type: auth-service-type
+              - name: PORT_RECOMMENDER_SERVICE
+                type: recommender-service-type
+              - name: PORT_PROMETHEUS_SERVICE
+                type: prometheus-service-type
+    options: 
+        customTimeouts:
+            create: "50ms"
+            update: "50ms"
+  persistence-2f2dd35c-d6f7-4b02-be98-5fd724aa3211:
+    name: persistence-2f2dd35c-d6f7-4b02-be98-5fd724aa3211
+    type: kubernetes:apps/v1:Deployment
+    properties:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: persistence-2f2dd35c-d6f7-4b02-be98-5fd724aa3211
+        labels:
+          type: persistence-type
+      spec:
+        replicas: 1
+        selector:
+          matchLabels:
+            type: persistence-type
+        template:
+          metadata:
+            labels:
+              type: persistence-type
+          spec:
+            containers:
+            - name: persistence
+              image: giovaz94/tea-store-general
+              imagePullPolicy: Always
+              ports:
+              - containerPort: 8003
+              resources:
+                requests:
+                  cpu: 10m
+                  memory: 10M
+              env:
+              - name: MCL
+                value: '905'
+              - name: SERVICE_NAME
+                value: persistence
+              - name: PORT
+                value: '80'
+              - name: MAX_SIZE
+                value: '1000'
+              - name: OUTPUT_SERVICES
+                value: '{}'
+              - name: MAX_CONNECTIONS
+                value: '70'
+              - name: PIPELINE_COUNT
+                value: '1'
+    options: 
+        customTimeouts:
+            create: "50ms"
+            update: "50ms"

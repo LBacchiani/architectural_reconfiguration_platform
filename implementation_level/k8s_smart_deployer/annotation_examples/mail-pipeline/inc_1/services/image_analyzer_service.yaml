@@ -1,6 +1,11 @@
 apiVersion: v1
 kind: Service
-type: image-analyzer-service-type    
+type: image-analyzer-service-type
+metadata:
+  annotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "80"
+      prometheus.io/path: "/metrics"
 spec:
   selector:
     type: image-analyzer-type

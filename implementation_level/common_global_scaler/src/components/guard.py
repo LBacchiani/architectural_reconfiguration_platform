@@ -31,9 +31,10 @@ class Guard:
         self.mixer = mixer
 
         prometheus_service_address = os.environ.get("PROMETHEUS_SERVICE_ADDRESS", "localhost")
-        prometheus_service_port = os.environ.get("PROMETHEUS_SERVICE_PORT", "64671")
+        prometheus_service_port = os.environ.get("PROMETHEUS_SERVICE_PORT", "59001")
 
         self.monitor_only = os.environ.get("MONITOR_ONLY", "false").lower() == 'true'
+        self.additional = int(os.environ.get("ADDITIONAL_SERVICE", "0")) if self.monitor_only else 0
         prometheus_url = f"http://{prometheus_service_address}:{prometheus_service_port}"
         self.prometheus_instance = PrometheusConnect(url=prometheus_url)
 
@@ -42,10 +43,10 @@ class Guard:
         self.predictions = predictions
         
         # Metrics names from environment variables
-        self.http_requests_metric = os.environ.get("HTTP_REQUESTS_METRIC", "http_requests_total_webUI_counter")
-        self.behaviour_execution_metric = os.environ.get("BEHAVIOUR_EXECUTION_METRIC", "behaviour_execution")
-        self.behaviour_time_metric = os.environ.get("BEHAVIOUR_TIME_METRIC", "behaviour_time_execution")
-        self.message_lost_metric = os.environ.get("MESSAGE_LOST_METRIC", "message_lost_webUI")
+        self.http_requests_metric = os.environ.get("HTTP_REQUESTS_METRIC", "http_requests_total_parser_counter")
+        self.behaviour_execution_metric = os.environ.get("BEHAVIOUR_EXECUTION_METRIC", "http_requests_total_global")
+        self.behaviour_time_metric = os.environ.get("BEHAVIOUR_TIME_METRIC", "http_requests_total_time")
+        self.message_lost_metric = os.environ.get("MESSAGE_LOST_METRIC", "message_lost_global_counter")
 
         self.logger = GuardLogger.from_env()
 
@@ -122,12 +123,15 @@ class Guard:
                     completed=completed if completed is not None else 0,
                     loss=loss if loss is not None else 0,
                     pred_workload=pred_workload if self.proactiveness and iter > 0 else None,
-                    mixed_workload=mixed_workload
+                    mixed_workload=mixed_workload,
+                    additional = self.additional
                 )
 
                 if self.should_scale(target_workload, current_mcl) and not self.monitor_only:
                     target_conf = self.scaler.calculate_configuration(target_workload + self.k_big)
-                    current_mcl, _ = self.scaler.process_request(target_conf)    
+                    # current_mcl, _ = self.scaler.process_request(target_conf)    
+                    current_mcl = self.scaler.process_request(target_conf)    
+
 
                 iter += self.sleep
         

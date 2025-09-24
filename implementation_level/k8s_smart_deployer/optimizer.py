@@ -86,25 +86,24 @@ class Optimizer:
             if spec['specification']:
                 spec['specification'] += ' and '
             value = 0
-            for instance in target['service_instances']:
+            for instance in target['instances']:
                 if pod_type == instance['type']:
                     value = instance['replicas']
-            if pod_type in target['service_instances']: 
-                value = target['service_instances'][pod_type]['replicas']
+            if pod_type in target['instances']: 
+                value = target['instances'][pod_type]['replicas']
             spec['specification'] += '{} >= {}'.format(pod_name, value)
         if 'deployment_preferences' in target:
             for resource in target['deployment_preferences']:
-                resource_type = resource['type']
-                preferences = {k: v for k,v in resource.items() if k != 'type'}
-                affinities = self.pod_affinity(type_2_comp[resource_type], components, preferences)
-                if affinities:
-                    spec['specification'] += ' and {}'.format(affinities)
-        if 'placement' in target:
-            for placement in target['placement']:
-                spec['specification'] += ' and ' + placement['node'] + "[0]." + refine_name(placement['type']) + "=" + str(placement['value'])
-        #spec['specification'] += ' and edge[0].persistence_type  = 1'
+                if 'affinity' in resource or 'antiAffinity' in resource:
+                    resource_type = resource['type']
+                    preferences = {k: v for k,v in resource.items() if k != 'type'}
+                    affinities = self.pod_affinity(type_2_comp[resource_type], components, preferences)
+                    if affinities:
+                        spec['specification'] += ' and {}'.format(affinities)
+                if 'placement' in resource:
+                    for placement in resource['placement']:
+                        spec['specification'] += ' and ' + placement['node'] + "[0]." + refine_name(resource['type']) + "=" + str(placement['value'])
         spec['specification'] += '; cost; (sum ?y in components: ?y)'
-        print(spec)
         return spec
 
     def optimize(self, resources, components, target):

@@ -38,10 +38,10 @@ deploy_components() {
 
   if [ "$PROJECT" == "mail-pipeline" ]; then
     echo -e "${GREEN}Deploying mail pipeline system...${NC}"
-    COMPONENTS=("roles" "prometheus" "redis" "entrypoint" "parser" "header_analyzer" "attachment_manager" "link_analyzer" "text_analyzer" "image_analyzer" "message_analyzer" "virus_scanner")
+    COMPONENTS=("roles" "prometheus" "redis" "parser" "header_analyzer" "attachment_manager" "link_analyzer" "text_analyzer" "image_analyzer" "message_analyzer" "virus_scanner")
   elif [ "$PROJECT" == "tea-store" ]; then
     echo -e "${GREEN}Deploying tea-store system...${NC}"
-    COMPONENTS=("prometheus" "recommender" "persistence" "image" "entrypoint" "auth" "gs-algorithm" "webUI")
+    COMPONENTS=("roles" "prometheus" "recommender" "persistence" "image" "auth" "webUI")
   else
     echo -e "${RED}Invalid system selected: $PROJECT${NC}"
     exit 1
@@ -90,7 +90,7 @@ undeploy_components() {
 
   echo -e "${YELLOW}Undeploying '$PROJECT'...${NC}"
 
-  COMPONENTS=("prometheus" "recommender" "persistence" "image" "entrypoint" "auth" "gs-algorithm" "webUI" "roles" "prometheus" "redis" "entrypoint" "parser" "header_analyzer" "attachment_manager" "link_analyzer" "text_analyzer" "image_analyzer" "message_analyzer" "virus_scanner")
+  COMPONENTS=("prometheus" "recommender" "persistence" "image" "auth" "gs-algorithm" "webUI" "roles" "prometheus" "redis" "parser" "header_analyzer" "attachment_manager" "link_analyzer" "text_analyzer" "image_analyzer" "message_analyzer" "virus_scanner")
 
   for COMPONENT in "${COMPONENTS[@]}"; do
     if [ -d "$PROJECT_DIR/$COMPONENT" ]; then

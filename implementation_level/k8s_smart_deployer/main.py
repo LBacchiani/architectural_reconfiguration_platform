@@ -11,11 +11,12 @@ import os
 
 if __name__ == '__main__':
     args = sys.argv[1:]
-    services = args[0] + '/'
-    target_decl = args[1]
-    vms_decl = args[2]
-    port = args[3]
-    language = args[4]
+    orchestration_name = args[0]
+    services = args[1] + '/'
+    target_decl = args[2]
+    vms_decl = args[3]
+    port = args[4]
+    optimal = args[5] == '--optimal' if len(args) == 6 else False
     target_folder = './deployment'
 
     components = []
@@ -39,7 +40,7 @@ if __name__ == '__main__':
         target_requirements = list(yaml.safe_load_all(f))[0]
         if 'existingResources' in target_requirements:
             for dep in target_requirements['existingResources']:
-                existing_dep[dep['type']] = dep['value']
+                existing_dep[dep['type']] = 1 if 'value' not in dep else dep['value']
 
     #remove strong dep already satisfied
     deleted_deps = {}
@@ -51,19 +52,22 @@ if __name__ == '__main__':
                 dep_type = dep['type']
                 val = 1 if 'value' not in dep else dep['value']
                 env = ""
-                if 'id' in dep:
-                    env = dep['id']
+                if 'config' in dep and 'envName' in dep['config']:
+                    env = dep['config']['envName']
+
                 if dep_type in existing_dep:
                     val -= existing_dep[dep_type]
                 if val <= 0:
                     out = {'type': dep_type, 'value': dep['value'] if 'value' in dep else 1}
-                    if env != "":
-                        out['id'] = env
+                    if 'config' in dep and 'envName' in dep['config']:
+                        out['id'] = dep['config']['envName']
+                        out['config'] = dep['config']
                     deleted_deps.setdefault(comp_type, []).append(out)
                 if val > 0:
                     out = {'type': dep_type, 'value': val}
-                    if env != "":
-                        out['id'] = env
+                    if 'config' in dep and 'envName' in dep['config']:
+                        out['id'] = dep['config']['envName']
+                        out['config'] = dep['config']
                     dependencies_left.append(out)
             if not dependencies_left:
                 del c['ports']
@@ -75,7 +79,7 @@ if __name__ == '__main__':
     configuration = replace_underscores(optimizer.optimize(vms, components, target_requirements))
     ###compute resource left
     placement = {x: [(y, configuration['configuration']['locations'][x]['0'][y]) for y in configuration['configuration']['locations'][x]['0']] for x in configuration['configuration']['locations']}
-    requirements = {x['type']: x['spec']['containers'][0]['resources']['requests'] if x['kind'] == 'Pod' else {'cpu': '0m', 'memory': '0M'} for x in components}
+    requirements = {x['type']: x['spec']['containers'][0]['resources']['requests'] if 'Pod' in x['kind'] or 'Deployment' in x['kind'] else {'cpu': '0m', 'memory': '0M'} for x in components}
 
     resource_left = update_usage(placement, requirements, vms)
     os.makedirs(target_folder, exist_ok=True)
@@ -100,9 +104,10 @@ if __name__ == '__main__':
             else:
                 c['ports'] = {'strong': deleted_deps[comp_type]}
 
-    if language == 'python':
-        generate_python_script(order, components, target_folder)
-    elif language == 'yaml':
-        generate_yaml_definition(order, components, target_folder)
-    else:
-        print(f"Unsupported output format: {language}")
+    # if language == 'python':
+    #     generate_python_script(order, components, target_folder)
+    # elif language == 'yaml':
+    #     generate_yaml_definition(order, components, target_folder)
+    # else:
+    #     print(f"Unsupported output format: {language}")
+    generate_yaml_definition(orchestration_name, order, components, target_folder, target_requirements['instances'], optimal)

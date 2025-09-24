@@ -1,4 +1,4 @@
-service_instances:
+instances:
   - type: "webui-type"
     replicas: 1
 
@@ -11,18 +11,10 @@ service_instances:
   - type: "image-type"
     replicas: 2
 
-existingDependencies:
+existingResources:
   - type: "auth-service-type"
-    value: 1
-  
   - type: "image-service-type"
-    value: 1
-  
   - type: "persistence-service-type"
-    value: 1
-
   - type: "recommender-service-type"
-    value: 1
-  
   - type: "webui-service-type"
-    value: 1
+  - type: "prometheus-service-type"

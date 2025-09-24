@@ -1,9 +1,9 @@
-service_instances:
+instances:
   - type: "webui-service-type"
     replicas: 1
+
 existingResources:
   - type: "prometheus-service-type"
-    value: 1
   
     
 

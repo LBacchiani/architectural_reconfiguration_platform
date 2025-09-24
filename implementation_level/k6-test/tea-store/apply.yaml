@@ -1,35 +1,92 @@
-apiVersion: k6.io/v1alpha1
-kind: TestRun
+apiVersion: v1
+kind: ConfigMap
 metadata:
-  name: k6-sample-test
+  name: ltest
+data:
+  main.js: |
+    import http from 'k6/http';
+    import { check } from 'k6';
+    const workload = [
+      16, 33, 50, 66, 83, 100, 116, 133, 150, 166,
+      183, 200, 216, 233, 250, 266, 283, 300, 316, 333,
+      350, 366, 383, 400, 416, 433, 450, 466, 483, 500,
+      500, 500, 500, 500, 500, 500, 500, 500, 500, 500,
+      500, 500, 500, 500, 500, 500, 500, 500, 500, 500,
+      500, 500, 500, 500, 500, 500, 500, 500, 500, 500,
+      500, 500, 500, 500, 500, 500, 500, 500, 500, 500,
+      500, 500, 500, 500, 500, 500, 500, 500, 500, 500,
+      500, 500, 500, 500, 500, 500, 500, 500, 500, 500,
+      500, 500, 500, 500, 500, 500, 500, 500, 500, 500,
+      500, 500, 500, 500, 500, 500, 500, 500, 500, 500,
+      500, 500, 500, 500, 500, 500, 500, 500, 500, 500,
+      500, 500, 500, 500, 500, 500, 500, 500, 500, 500,
+      500, 500, 500, 500, 500, 500, 500, 500, 500, 500,
+      500, 500, 500, 500, 500, 500, 500, 500, 500, 500,
+      500, 483, 466, 450, 433, 416, 400, 383, 366, 350,
+      333, 316, 300, 283, 266, 250, 233, 216, 200, 183,
+      166, 150, 133, 116, 100, 83, 66, 50, 33, 16
+    ];
+
+    const stages = workload.map((rps) => ({ duration: '1s', target: rps }));
+    const maxRps = Math.max(...workload);
+
+    export const options = {
+      discardResponseBodies: true,
+      scenarios: {
+        rps_profile: {
+          executor: 'ramping-arrival-rate',
+          startRate: workload[0],
+          timeUnit: '1s',
+          stages,
+          preAllocatedVUs: Math.ceil(maxRps * 0.5) || 50,
+          maxVUs: Math.ceil(maxRps * 2) || 200,
+          tags: { scenario: 'rps_profile' },
+        },
+      },
+      thresholds: {
+        http_req_failed: ['rate<0.01'],
+        http_req_duration: ['p(95)<1000'],
+      },
+    };
+
+    const BASE_URL = 'http://webui-service/request';
+
+    export default function () {
+      const res = http.post(BASE_URL, {}, {
+        headers: { 'Content-Type': 'application/json' },
+      });
+      check(res, {
+        'status is 2xx/3xx': (r) => r.status >= 200 && r.status < 400,
+      });
+    }
+
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: k6-email-test
 spec:
-  cleanup: 'post'
-  parallelism: 4
-  script:
-    configMap:
-      name: ltest
-      file: main.js
-  separate: false
-  runner:
-    metadata:
-      annotations:
-        sidecar.istio.io/inject: "false"
-    securityContext:
-      runAsUser: 1000
-      runAsGroup: 1000
-      runAsNonRoot: true
-    resources:
-      limits:
-        cpu: 200m
-        memory: 1000Mi
-      requests:
-        cpu: 100m
-        memory: 500Mi
-  starter:
-    metadata:
-      annotations:
-        sidecar.istio.io/inject: "false"
-    securityContext:
-      runAsUser: 2000
-      runAsGroup: 2000
-      runAsNonRoot: true
+  template:
+    spec:
+      containers:
+        - name: k6
+          image: grafana/k6:latest
+          args: ["run", "/scripts/main.js"]
+          resources:
+            limits:
+              cpu: "200m"
+              memory: "1000Mi"
+            requests:
+              cpu: "100m"
+              memory: "500Mi"
+          volumeMounts:
+            - name: k6-scripts
+              mountPath: /scripts
+      restartPolicy: Never
+      volumes:
+        - name: k6-scripts
+          configMap:
+            name: ltest
+            items:
+              - key: main.js
+                path: main.js

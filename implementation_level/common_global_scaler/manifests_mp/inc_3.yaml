@@ -1,0 +1,162 @@
+name: inc_3
+runtime: yaml
+resources:
+  message-analyzer-0ce65fa4-ace9-495f-909c-c6fa831c148b:
+    name: message-analyzer-0ce65fa4-ace9-495f-909c-c6fa831c148b
+    type: kubernetes:apps/v1:Deployment
+    properties:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: message-analyzer-0ce65fa4-ace9-495f-909c-c6fa831c148b
+        labels:
+          type: message-analyzer-type
+      spec:
+        replicas: 1
+        selector:
+          matchLabels:
+            type: message-analyzer-type
+        template:
+          metadata:
+            labels:
+              type: message-analyzer-type
+          spec:
+            containers:
+            - name: message-analyzer
+              image: giovaz94/mail-pipeline-general
+              imagePullPolicy: Always
+              ports:
+              - containerPort: 80
+              resources:
+                requests:
+                  cpu: 10m
+                  memory: 10M
+              env:
+              - name: MCL
+                value: '300'
+              - name: REDIS_HOST
+                value: redis-service
+              - name: SERVICE_NAME
+                value: message-analyzer
+              - name: PORT
+                value: '80'
+              - name: MAX_SIZE
+                value: '800'
+              - name: MAX_CONNECTIONS
+                value: '70'
+              - name: PIPELINE_COUNT
+                value: '1'
+    options: 
+        customTimeouts:
+            create: "50ms"
+            update: "50ms"
+  virus-scanner-40edba7b-ba17-4cd9-9ac8-f6181dce8f23:
+    name: virus-scanner-40edba7b-ba17-4cd9-9ac8-f6181dce8f23
+    type: kubernetes:apps/v1:Deployment
+    properties:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: virus-scanner-40edba7b-ba17-4cd9-9ac8-f6181dce8f23
+        labels:
+          type: virus-scanner-type
+      spec:
+        replicas: 1
+        selector:
+          matchLabels:
+            type: virus-scanner-type
+        template:
+          metadata:
+            labels:
+              type: virus-scanner-type
+          spec:
+            containers:
+            - name: virus-scanner
+              image: giovaz94/mail-pipeline-general
+              imagePullPolicy: Always
+              ports:
+              - containerPort: 80
+              resources:
+                requests:
+                  cpu: 10m
+                  memory: 10M
+              env:
+              - name: MCL
+                value: '120'
+              - name: REDIS_HOST
+                value: redis-service
+              - name: SERVICE_NAME
+                value: virus-scanner
+              - name: PORT
+                value: '80'
+              - name: MAX_SIZE
+                value: '800'
+              - name: MAX_CONNECTIONS
+                value: '70'
+              - name: PIPELINE_COUNT
+                value: '1'
+              - name: MESSAGE_ANALYZER
+                type: message-analyzer-service-type
+              - name: PORT_ATTACHMENT_MANAGER_SERVICE
+                type: attachment-manager-service-type
+    options: 
+        customTimeouts:
+            create: "50ms"
+            update: "50ms"
+  parser-79128c15-4c5d-413b-903c-2a0912784292:
+    name: parser-79128c15-4c5d-413b-903c-2a0912784292
+    type: kubernetes:apps/v1:Deployment
+    properties:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: parser-79128c15-4c5d-413b-903c-2a0912784292
+        labels:
+          type: parser-type
+      spec:
+        replicas: 1
+        selector:
+          matchLabels:
+            type: parser-type
+        template:
+          metadata:
+            labels:
+              type: parser-type
+          spec:
+            containers:
+            - name: parser
+              image: giovaz94/mail-pipeline-general
+              imagePullPolicy: Always
+              ports:
+              - containerPort: 80
+              resources:
+                requests:
+                  cpu: 10m
+                  memory: 10M
+              env:
+              - name: MCL
+                value: '110'
+              - name: REDIS_HOST
+                value: redis-service
+              - name: SERVICE_NAME
+                value: parser
+              - name: PORT
+                value: '80'
+              - name: MAX_SIZE
+                value: '800'
+              - name: MAX_CONNECTIONS
+                value: '70'
+              - name: PIPELINE_COUNT
+                value: '1'
+              - name: VIRUS_SCANNER
+                type: virus-scanner-service-type
+              - name: HEADER_ANALYZER
+                type: header-analyzer-service-type
+              - name: TEXT_ANALYZER
+                type: text-analyzer-service-type
+              - name: LINK_ANALYZER
+                type: link-analyzer-service-type
+    options: 
+        customTimeouts:
+            create: "50ms"
+            update: "50ms"

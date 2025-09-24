@@ -1,6 +1,4 @@
 import yaml
-import time
-import os
 from kubernetes.client.rest import ApiException
 
 

@@ -16,12 +16,12 @@ python main.py ARG1 ARG2 ARG3 ARG4 ARG5 ARG6
 where
 
 ```
-ARG1 is the folder where microservice specifications are
-ARG2 is the yaml file containing the target configuration requirements
-ARG3 is the yaml file containing virtual machines requirements
-ARG4 is the value of the <PORT> specified after launching the zephyrus2 container
-ARG5 is the orchestration language (currently, we only support ```YAML``` and ```Python``` as orchestration languages. To choose among them, 
-use ```yaml``` and ```python```)
+ARG1 is the orchestration name
+ARG2 is the folder where microservice specifications are (without final '/')
+ARG3 is the yaml file containing the target configuration requirements
+ARG4 is the yaml file containing virtual machines requirements
+ARG5 is the value of the <PORT> specified after launching the zephyrus2 container
+ARG6 is optional. It is a flag '--optimal' and its presence enable optimal placement within existing nodes. If this flag is enabled, Pulumi deployment will be slower.
 ```
 We currently support two kinds of deployment preferences (considered as "hard" constraints, i.e., they must be satisfied during service scheduling): affinity and antiAffinity. 
 The former ensures that the operators used within its context are satisfied, while the latter ensures that the negation of the operators used within its context are satisfied.

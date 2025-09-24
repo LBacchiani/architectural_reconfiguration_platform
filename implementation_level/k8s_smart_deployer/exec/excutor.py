@@ -25,7 +25,8 @@ def execute_python(file_path: str, stack_name: str, operation: str, mapping:  Di
     except subprocess.CalledProcessError as e:
         print(f"Execution failed: {e}")
 
-def execute_yaml(file_path: str, stack_name:str, operation: str, project_path: str, mapping:  Dict[str, List[str]]):
+def execute_yaml(file_path: str, stack_name: str, operation: str, project_path: str,
+                 mapping: Dict[str, List[str]], replica_multiplier: int):
     converted_file_path = Path(file_path)
     converted_project_path = Path(project_path)
     ensure_path(converted_file_path)
@@ -38,15 +39,22 @@ def execute_yaml(file_path: str, stack_name:str, operation: str, project_path: s
 
         substitute_env_types_in_yaml(destination, mapping)
 
+        # Scale replicas if multiplier > 0
+        if replica_multiplier > 0:
+            data = yaml.safe_load(destination.read_text())
+            for res in data.get("resources", {}).values():
+                spec = res.get("properties", {}).get("spec", {})
+                if "replicas" in spec:
+                    spec["replicas"] = spec["replicas"] * replica_multiplier
+            destination.write_text(yaml.safe_dump(data, sort_keys=False))
+        
         command = "up" if operation == Op.DEPLOY.value else "destroy"
 
-        out_select_stack = subprocess.run(
+        subprocess.run(
             ["pulumi", "stack", "select", "--non-interactive", "-c", stack_name],
             cwd=converted_project_path,
             check=True
         )
-
-        print(out_select_stack)
 
         out_up_command = subprocess.run(
             ["pulumi", command, "-f", "-y", "--non-interactive", "--stack", stack_name],
@@ -61,19 +69,23 @@ def execute_yaml(file_path: str, stack_name:str, operation: str, project_path: s
         print(f"Pulumi command failed: {e}")
         print("Error output:", e.stderr)
 
-def execute(file_path: str, stack_name:str, operation: str, project_path: str):
+def execute(file_path: str, stack_name: str, operation: str, project_path: str, replica_multiplier: int):
     """
     Executes the appropriate function (execute_python or execute_yaml)
     based on the file extension of the provided file_path.
+    Adds support for scaling replicas. If replica_multiplier == 0, destroy the stack.
     """
     file_extension = Path(file_path).suffix
     mappings = map_services_by_type(in_cluster=False)
     print(mappings)
 
+    if replica_multiplier == 0:
+        operation = Op.DESTROY.value
+
     if file_extension == ".py":
         execute_python(file_path, stack_name, operation, mappings)
     elif file_extension == ".yaml":
-        execute_yaml(file_path, stack_name, operation, project_path, mappings)
+        execute_yaml(file_path, stack_name, operation, project_path, mappings, replica_multiplier)
     else:
         raise ValueError(f"Unsupported file type: {file_extension}. Supported types are .py and .yaml.")
 
