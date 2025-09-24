@@ -1,4 +1,4 @@
-FROM giovaz94/cgs-base:latest
+FROM lorenzobacchiani/base_gs:latest
 
 COPY ./manifests_ts/ ./my_files/
 

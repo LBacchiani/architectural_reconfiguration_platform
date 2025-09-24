@@ -1,4 +1,4 @@
-name: my-k8s-app
+name: inc_2
 runtime: yaml
 resources:
   image-edf9f0e7-9ae9-44e2-94ad-325f997be13f:
@@ -46,7 +46,10 @@ resources:
                 value: '70'
               - name: PIPELINE_COUNT
                 value: '1'
-    options: {}
+    options: 
+        customTimeouts:
+            create: "50ms"
+            update: "50ms"
   auth-a4a7dce2-a9a9-4405-8614-d1ba75491f2e:
     name: auth-a4a7dce2-a9a9-4405-8614-d1ba75491f2e
     type: kubernetes:apps/v1:Deployment
@@ -94,7 +97,10 @@ resources:
                 value: '1'
               - name: PORT_PERSISTENCE_SERVICE
                 type: persistence-service-type
-    options: {}
+    options: 
+        customTimeouts:
+            create: "50ms"
+            update: "50ms"
   webui-dc95f5ce-093b-4687-a310-6923576b0dde:
     name: webui-dc95f5ce-093b-4687-a310-6923576b0dde
     type: kubernetes:apps/v1:Deployment
@@ -151,7 +157,10 @@ resources:
                 type: recommender-service-type
               - name: PORT_PROMETHEUS_SERVICE
                 type: prometheus-service-type
-    options: {}
+    options: 
+        customTimeouts:
+            create: "50ms"
+            update: "50ms"
   persistence-2f2dd35c-d6f7-4b02-be98-5fd724aa3211:
     name: persistence-2f2dd35c-d6f7-4b02-be98-5fd724aa3211
     type: kubernetes:apps/v1:Deployment
@@ -197,4 +206,7 @@ resources:
                 value: '70'
               - name: PIPELINE_COUNT
                 value: '1'
-    options: {}
+    options: 
+        customTimeouts:
+            create: "50ms"
+            update: "50ms"

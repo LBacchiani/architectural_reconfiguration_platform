@@ -14,7 +14,7 @@ spec:
       serviceAccountName: scaler-service-account
       containers:
         - name: gs-algorithm
-          image: giovaz94/cgs-teastore
+          image: lorenzobacchiani/teastore_gs
           imagePullPolicy: Always
           ports:
             - containerPort: 5000
@@ -23,7 +23,7 @@ spec:
               value: "true"
             - name: K_BIG
               value: "10"
-            - name:  SLEEP
+            - name: SLEEP
               value: "20"
             - name: K
               value: "8"
@@ -42,20 +42,25 @@ spec:
             - name: FOLDER_PATH
               value: "/app/my_files"
             - name: SYSTEM_BASE_CONFIGURATION
-              value: "1,1,1,1,2"
+              value: 1,1,1,1,2
             - name: MICROSERVICES_MCL
-              value: "150,905,190,5000,600"
+              value: 150,905,190,5000,600
             - name: MICROSERVICES_MF
               value: "1,4,1,3,6"
             - name: INCREMENT_1
               value: "2,1,1,0,2"
-            - name: INCREMENT_2e
+            - name: INCREMENT_2
               value: "1,1,1,0,2"
-            - name: PULUMI_ACCESS_TOKEN
-              valueFrom:
-                secretKeyRef:
-                  name: pulumi-access
-                  key: PULUMI_ACCESS_TOKEN
+            - name: HTTP_REQUESTS_METRIC
+              value: "http_requests_total_webUI_counter"              
+            - name: BEHAVIOUR_EXECUTION_METRIC
+              value: "behaviour_execution"
+            - name: BEHAVIOUR_TIME_METRIC
+              value: "behaviour_time_execution"
+            - name: MESSAGE_LOST_METRIC
+              value: "message_lost_webUI"
+            - name: ADDITIONAL_SERVICE
+              value: "0"
       restartPolicy: Always
 ---
 apiVersion: v1
@@ -69,35 +74,3 @@ spec:
     - protocol: TCP
       port: 5000
       targetPort: 5000
----
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: scaler-service-account
-  namespace: default
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
-  namespace: default
-  name: pod-creator
-rules:
-  - apiGroups: [""]
-    resources: ["pods", "pods/status"]
-    verbs: ["create", "get", "list", "delete", "watch", "patch", "update"]
-  - apiGroups: ["apps"]
-    resources: ["deployments", "deployments/scale"]
-    verbs: ["get", "list", "patch", "update"]
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: pod-creator-binding
-  namespace: default
-subjects:
-  - kind: ServiceAccount
-    name: scaler-service-account
-roleRef:
-  kind: Role
-  name: pod-creator
-  apiGroup: rbac.authorization.k8s.io

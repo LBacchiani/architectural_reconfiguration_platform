@@ -41,7 +41,7 @@ deploy_components() {
     COMPONENTS=("roles" "prometheus" "redis" "entrypoint" "parser" "header_analyzer" "attachment_manager" "link_analyzer" "text_analyzer" "image_analyzer" "message_analyzer" "virus_scanner")
   elif [ "$PROJECT" == "tea-store" ]; then
     echo -e "${GREEN}Deploying tea-store system...${NC}"
-    COMPONENTS=("prometheus" "recommender" "persistence" "image" "entrypoint" "auth" "gs-algorithm" "webUI")
+    COMPONENTS=("roles" "prometheus" "recommender" "persistence" "image" "entrypoint" "auth" "webUI")
   else
     echo -e "${RED}Invalid system selected: $PROJECT${NC}"
     exit 1
