@@ -5,9 +5,9 @@ instances:
 existingResources:
   - type: "prometheus-service-type"
   - type: "birex-collector-service-type"
-  
-placement:
-  - type: "birex-data-processor-type"
-    node: "edge"
-    value: 1
 
+deployment_preferences: 
+  - type: birex-data-processor-type
+    placement:
+      - node: "cloud"
+        value: 1

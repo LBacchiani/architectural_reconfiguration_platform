@@ -157,12 +157,12 @@ def no_dash_representer(dumper, value):
     return dumper.represent_mapping('tag:yaml.org,2002:map', value.items(), flow_style=False)
 
 
-def generate_yaml_definition(order, components, folder_name, instances, optimal):
+def generate_yaml_definition(orchestration_name, order, components, folder_name, instances, optimal):
     os.makedirs(folder_name, exist_ok=True)
     yaml.add_representer(dict, no_dash_representer)
 
     pulumi_yaml = {
-        'name': 'my-k8s-app',
+        'name': orchestration_name,
         'runtime': 'yaml',
         'resources': { pod['name']: pod for pod in add_pod_definitions(order, components, instances, optimal) }
     }
