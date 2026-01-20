@@ -1,9 +1,12 @@
-giovserver:
-    resources:
-      cpu: 15780m
-      memory: 19780M
-giovworker:
+worker1:
   resources:
-    cpu: 16000m
-    memory: 40000M
-
+    memory: "15G"
+    cpu: "8"
+worker2:
+  resources:
+    memory: "15G"
+    cpu: "8"
+worker3:
+  resources:
+    memory: "15G"
+    cpu: "8"

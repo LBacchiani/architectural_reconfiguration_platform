@@ -1,8 +1,12 @@
-giovserver:
+worker1:
   resources:
-    memory: "20G"
-    cpu: "16"
-giovworker:
+    memory: "15G"
+    cpu: "8"
+worker2:
   resources:
-    memory: "40G"
-    cpu: "16"
+    memory: "15G"
+    cpu: "8"
+worker3:
+  resources:
+    memory: "15G"
+    cpu: "8"

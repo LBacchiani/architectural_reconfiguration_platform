@@ -1,8 +1,8 @@
 cloud:
   resources:
-    memory: "40G"
-    cpu: "9000m"
+    memory: "15G"
+    cpu: "8000m"
 edge:
   resources:
-    memory: "40G"
+    memory: "15G"
     cpu: "8000m"
